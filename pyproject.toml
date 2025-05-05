@@ -5,7 +5,7 @@ version = "0.0.1"
 license = {file = "LICENSE"}
 
 [project.urls]
-Repository = "https://github.com/hybs3288/ComfyUI-hybs-nodes"
+Repository = "https://github.com/hybskgks28275/ComfyUI-hybs-nodes"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
