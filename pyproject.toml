@@ -1,0 +1,14 @@
+[project]
+name = "ComfyUI-hybs-nodes"
+description = "Various custom nodes will be added."
+version = "1.0.0"
+license = "LICENSE"
+
+[project.urls]
+Repository = "https://github.com/hybskgks28275/ComfyUI-hybs-nodes"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = "hybskgks28275"
+DisplayName = "ComfyUI-hybs-nodes"
+Icon = ""
