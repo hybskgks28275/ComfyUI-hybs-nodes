@@ -68,8 +68,8 @@ class HYBS_ResolutionSelector:
     FUNCTION = "resolution_selector"
     CATEGORY = "HYBS/ResolutionSelector"
 
-    def resolution_selector(self, choice):
-        w, h = map(int, choice.split("x"))
+    def resolution_selector(self, resolution):
+        w, h = map(int, resolution.split("x"))
         return (w, h)
 
 class HYBS_RandomResolutionSelector:
