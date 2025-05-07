@@ -34,11 +34,12 @@ def load_combos():
     base_dir = os.path.dirname(os.path.dirname(__file__))
     json_path = os.path.join(base_dir, "config", "resolution_combos.json")
     if os.path.isfile(json_path):
-        # JSONファイルが存在する場合は厳密に読み込む
+        # JSONファイルが存在する場合は読み込む
         with open(json_path, encoding="utf-8") as f:
             try:
                 data = json.load(f)
             except json.JSONDecodeError as e:
+                # JSONのパースエラー
                 raise ValueError(f"Failed to parse resolution_combos.json: {e}")
         # フォーマット検証
         if not (isinstance(data, list) and data and all(
@@ -46,21 +47,19 @@ def load_combos():
             isinstance(item[0], int) and isinstance(item[1], int)
             for item in data
         )):
+            # フォーマットエラー
             raise ValueError("resolution_combos.json must be a non-empty list of [width, height] integer pairs.")
         return [tuple(item) for item in data]
     # ファイル未存在時はデフォルトを使用
     return DEFAULT_COMBOS
-
-# 起動時に一度ロードしてリストと選択肢を作成
-COMBOS = load_combos()
-STR_CHOICES = [f"{w}x{h}" for w, h in COMBOS]
 
 class HYBS_ResolutionSelector:
 
     @classmethod
     def INPUT_TYPES(cls):
         return {
-            "required": {"resolution": (STR_CHOICES,)}
+            # 解像度リストを取得して表示
+            "required": {"resolution": ([f"{w}x{h}" for w, h in load_combos()],)}
         }
     
     RETURN_TYPES = ("INT", "INT")
@@ -78,6 +77,7 @@ class HYBS_RandomResolutionSelector:
     def INPUT_TYPES(cls):
         return {
             "required": {
+                # seed値
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff})
             }
         }
@@ -88,9 +88,10 @@ class HYBS_RandomResolutionSelector:
     CATEGORY = "HYBS/ResolutionSelector"
 
     def random_resolution_selector(self, seed):
-        # 毎回再読み込み
+        # 解像度リストを読み込み
         combos = load_combos()
-        # シード値に基づいて選択
+        # seed に基づいて選択
+        # random モジュールは再現性がなくなるため使用しない
         idx = seed % len(combos)
         return combos[idx]
 
