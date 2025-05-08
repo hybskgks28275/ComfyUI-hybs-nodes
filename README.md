@@ -73,7 +73,7 @@ Place your custom resolution list in `config/resolution_combos.json` at the root
 
    ```text
    ComfyUI/
-   └── extensions/
+   └── custom_nodes/
        └── ComfyUI-hybs-nodes/
            ├── config/
            │   └── resolution_combos.json.example
