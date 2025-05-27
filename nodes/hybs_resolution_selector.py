@@ -25,6 +25,9 @@ DEFAULT_COMBOS = [
     (2048, 1664), (2048, 1600), (2048, 1536)
 ]
 
+CONFIG_FILE_PATH = "config"
+CONFIG_FILE_NAME ="resolution_combos.json"
+
 def load_combos():
     """
     config/resolution_combos.json から解像度リストをロード。
@@ -32,7 +35,7 @@ def load_combos():
     JSONのパースエラーやフォーマット不正時は例外を投げる。
     """
     base_dir = os.path.dirname(os.path.dirname(__file__))
-    json_path = os.path.join(base_dir, "config", "resolution_combos.json")
+    json_path = os.path.join(base_dir, CONFIG_FILE_PATH, CONFIG_FILE_NAME)
     if os.path.isfile(json_path):
         # JSONファイルが存在する場合は読み込む
         with open(json_path, encoding="utf-8") as f:
@@ -40,7 +43,7 @@ def load_combos():
                 data = json.load(f)
             except json.JSONDecodeError as e:
                 # JSONのパースエラー
-                raise ValueError(f"Failed to parse resolution_combos.json: {e}")
+                raise ValueError(f"Failed to parse {CONFIG_FILE_NAME}: {e}")
         # フォーマット検証
         if not (isinstance(data, list) and data and all(
             isinstance(item, (list, tuple)) and len(item) == 2 and
@@ -48,7 +51,7 @@ def load_combos():
             for item in data
         )):
             # フォーマットエラー
-            raise ValueError("resolution_combos.json must be a non-empty list of [width, height] integer pairs.")
+            raise ValueError(f"{CONFIG_FILE_NAME} must be a non-empty list of [width, height] integer pairs.")
         return [tuple(item) for item in data]
     # ファイル未存在時はデフォルトを使用
     return DEFAULT_COMBOS
