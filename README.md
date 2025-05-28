@@ -43,6 +43,18 @@ Outputs a resolution `(width, height)` from a predefined list based on a seed in
   2. Throws a runtime error if the JSON file exists but is malformed or has invalid format.
   3. Determines the index with `seed % len(combos)` to select the resolution.
 
+## SeedListGenerator
+
+Generates a list of random seed values.
+
+* **Category**: `HYBS/SeedGenerator`  
+* **Inputs**:  
+  * `count` (INT): Number of random seeds to generate.  
+* **Outputs**:
+  
+  * `seed list` (LIST)
+  * `count` (INT)
+
 ## Configuration
 
 Place your custom resolution list in `config/resolution_combos.json` at the root of the extension (next to `nodes/`). The file **must** contain a non-empty JSON array of integer pairs, e.g.:
@@ -78,7 +90,8 @@ Place your custom resolution list in `config/resolution_combos.json` at the root
            ├── config/
            │   └── resolution_combos.json.example
            ├── nodes/
-           │   └── hybs_resolution_selector.py
+           │   ├── hybs_resolution_selector.py
+           |   └── hybs_seed_list_generator.py
            ├── LICENSE
            ├── README.md
            ├── __init__.py
