@@ -43,7 +43,7 @@ Outputs a resolution `(width, height)` from a predefined list based on a seed in
   2. Throws a runtime error if the JSON file exists but is malformed or has invalid format.
   3. Determines the index with `seed % len(combos)` to select the resolution.
 
-## SeedListGenerator
+### SeedListGenerator
 
 Generates a list of random seed values.
 
