@@ -1,7 +1,7 @@
 [project]
 name = "ComfyUI-hybs-nodes"
 description = "Various custom nodes will be added."
-version = "2.0.0"
+version = ""
 license = "LICENSE"
 
 [project.urls]
