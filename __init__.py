@@ -1,5 +1,6 @@
 from .nodes.hybs_resolution_selector import NODE_CLASS_MAPPINGS as NODE_RESOLUTION_CLASS_MAPPINGS
 from .nodes.hybs_seed_list_generator import NODE_CLASS_MAPPINGS as NODE_SEED_CLASS_MAPPINGS
+from .nodes.hybs_conditional_lora_loader import NODE_CLASS_MAPPINGS as NODE_SEED_CLASS_MAPPINGS
 
 NODE_CLASS_MAPPINGS = {
     **NODE_RESOLUTION_CLASS_MAPPINGS,
