@@ -169,8 +169,8 @@ strength_clip  = 0.6
    └── custom_nodes/
        └── ComfyUI-hybs-nodes/
            ├── config/
-           │   ├── resolution_combos.json.example
-           │   └── sample.toml
+           │   ├── lora_condition.toml.example
+           │   └── resolution_combos.json.example
            ├── nodes/
            │   ├── hybs_resolution_selector.py
            │   ├── hybs_seed_list_generator.py
