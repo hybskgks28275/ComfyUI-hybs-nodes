@@ -1,0 +1,923 @@
+{
+  "id": "1739e849-f898-4d73-9f15-2dbe7976b390",
+  "revision": 0,
+  "last_node_id": 19,
+  "last_link_id": 42,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "D2 Checkpoint Loader",
+      "pos": [
+        700,
+        430
+      ],
+      "size": [
+        270,
+        274
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "links": null
+        },
+        {
+          "name": "ckpt_name",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "ckpt_hash",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "ckpt_fullpath",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "sampling",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "d2-nodes-comfyui",
+        "ver": "8d1619ed78a70d908b9c6efc615655c35fab7ba7",
+        "Node name for S&R": "D2 Checkpoint Loader"
+      },
+      "widgets_values": [
+        "xl\\自作\\LuminarQMix\\LuminarQMix_v80\\LuminarQMix_vPred_v81A.safetensors",
+        true,
+        "normal",
+        true,
+        0
+      ]
+    },
+    {
+      "id": 2,
+      "type": "Conditional LoRA Loader",
+      "pos": [
+        990,
+        430
+      ],
+      "size": [
+        270,
+        98
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        },
+        {
+          "name": "positive",
+          "type": "STRING",
+          "link": 36
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            14
+          ]
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "links": [
+            27,
+            28
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-hybs-nodes",
+        "ver": "2.0.1",
+        "Node name for S&R": "Conditional LoRA Loader"
+      },
+      "widgets_values": [
+        "sample_conditional.toml"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "pos": [
+        700,
+        750
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            23
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.60",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "aiartlabSdxlVae_v10.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "D2 Prompt",
+      "pos": [
+        700,
+        860
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "links": [
+            35
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "d2-nodes-comfyui",
+        "ver": "8d1619ed78a70d908b9c6efc615655c35fab7ba7",
+        "Node name for S&R": "D2 Prompt"
+      },
+      "widgets_values": [
+        "masterpiece, best quality, good quality, amazing quality, great quality, very aesthetic, very awa, highres, absurdres, newest, anime coloring, anime screenshot, 1girl, solo, general, loose socks, layered socks, no shoes, simple background, white background, looking at viewer, smile, sitting, indian style",
+        "# + // + /**/",
+        "CHOOSE",
+        68
+      ]
+    },
+    {
+      "id": 6,
+      "type": "D2 Prompt",
+      "pos": [
+        700,
+        1110
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "links": [
+            33,
+            34
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "d2-nodes-comfyui",
+        "ver": "8d1619ed78a70d908b9c6efc615655c35fab7ba7",
+        "Node name for S&R": "D2 Prompt"
+      },
+      "widgets_values": [
+        "(fat, rib, love handles, muffin top, muscular:1.4), worst quality, low quality, bad anatomy, bad proportions, extra limbs, jpeg artifacts, watermark, signature, text, (fused fingers, missing fingers, extra fingers, mutated hands:1.4), missing legs, extra legs, mutated legs, empty eyes, @_@, heart-shaped pupils",
+        "# + // + /**/",
+        "CHOOSE",
+        84
+      ]
+    },
+    {
+      "id": 7,
+      "type": "EmptyLatentImage",
+      "pos": [
+        1680,
+        740
+      ],
+      "size": [
+        270,
+        106
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": 11
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            20
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.60",
+        "Node name for S&R": "EmptyLatentImage"
+      },
+      "widgets_values": [
+        512,
+        512,
+        1
+      ]
+    },
+    {
+      "id": 8,
+      "type": "Resolution Selector",
+      "pos": [
+        1680,
+        900
+      ],
+      "size": [
+        270,
+        78
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-hybs-nodes",
+        "ver": "2.0.1",
+        "Node name for S&R": "Resolution Selector"
+      },
+      "widgets_values": [
+        "1344x1728"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "PreviewImage",
+      "pos": [
+        2130,
+        430
+      ],
+      "size": [
+        140,
+        246
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 22
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.60",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 10,
+      "type": "KSampler",
+      "pos": [
+        1680,
+        430
+      ],
+      "size": [
+        270,
+        262
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 14
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 29
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 30
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 20
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": 39
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            21
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.60",
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        325114640609596,
+        "randomize",
+        20,
+        4,
+        "euler",
+        "simple",
+        1
+      ]
+    },
+    {
+      "id": 13,
+      "type": "VAEDecode",
+      "pos": [
+        1970,
+        430
+      ],
+      "size": [
+        140,
+        46
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 21
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 23
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            22
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.60",
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 14,
+      "type": "BNK_CLIPTextEncodeSDXLAdvanced",
+      "pos": [
+        1280,
+        430
+      ],
+      "size": [
+        380,
+        220
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 27
+        },
+        {
+          "name": "text_l",
+          "type": "STRING",
+          "widget": {
+            "name": "text_l"
+          },
+          "link": 37
+        },
+        {
+          "name": "text_g",
+          "type": "STRING",
+          "widget": {
+            "name": "text_g"
+          },
+          "link": 38
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            29
+          ]
+        }
+      ],
+      "title": "Positive Text Encode",
+      "properties": {
+        "cnr_id": "adv-encode",
+        "ver": "63984deefb005da1ba90a1175e21d91040da38ab",
+        "Node name for S&R": "BNK_CLIPTextEncodeSDXLAdvanced"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "length+mean",
+        "comfy",
+        0.5
+      ]
+    },
+    {
+      "id": 15,
+      "type": "DPRandomGenerator",
+      "pos": [
+        1110,
+        860
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "widget": {
+            "name": "text"
+          },
+          "link": 35
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": 40
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            36,
+            37,
+            38,
+            42
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "dynamicprompt",
+        "ver": "3f2fff32358cf39e21b8b440ca87eac9a8e2bade",
+        "Node name for S&R": "DPRandomGenerator"
+      },
+      "widgets_values": [
+        "",
+        29,
+        "randomize",
+        "Yes"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "BNK_CLIPTextEncodeSDXLAdvanced",
+      "pos": [
+        1280,
+        740
+      ],
+      "size": [
+        380,
+        214
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 28
+        },
+        {
+          "name": "text_l",
+          "type": "STRING",
+          "widget": {
+            "name": "text_l"
+          },
+          "link": 33
+        },
+        {
+          "name": "text_g",
+          "type": "STRING",
+          "widget": {
+            "name": "text_g"
+          },
+          "link": 34
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            30
+          ]
+        }
+      ],
+      "title": "Negative Text Encode",
+      "properties": {
+        "cnr_id": "adv-encode",
+        "ver": "63984deefb005da1ba90a1175e21d91040da38ab",
+        "Node name for S&R": "BNK_CLIPTextEncodeSDXLAdvanced"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "length+mean",
+        "comfy",
+        0.5
+      ]
+    },
+    {
+      "id": 17,
+      "type": "Seed (rgthree)",
+      "pos": [
+        700,
+        1360
+      ],
+      "size": [
+        320,
+        130
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "dir": 4,
+          "name": "SEED",
+          "shape": 3,
+          "type": "INT",
+          "slot_index": 0,
+          "links": [
+            39,
+            40
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "rgthree-comfy",
+        "ver": "32142fe476878a354dda6e2d4b5ea98960de3ced",
+        "randomMax": 1125899906842624,
+        "randomMin": 0
+      },
+      "widgets_values": [
+        307081489653226,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 19,
+      "type": "ShowText|pysssss",
+      "pos": [
+        1280,
+        1000
+      ],
+      "size": [
+        380,
+        150
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 42
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "shape": 6,
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-custom-scripts",
+        "ver": "f2838ed5e59de4d73cde5c98354b87a8d3200190",
+        "Node name for S&R": "ShowText|pysssss"
+      },
+      "widgets_values": [
+        "masterpiece, best quality, good quality, amazing quality, great quality, very aesthetic, very awa, highres, absurdres, newest, anime coloring, anime screenshot, 1girl, solo, general, loose socks, layered socks, no shoes, simple background, white background, looking at viewer, smile, sitting, indian style"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      1,
+      1,
+      2,
+      1,
+      "CLIP"
+    ],
+    [
+      11,
+      8,
+      0,
+      7,
+      0,
+      "INT"
+    ],
+    [
+      12,
+      8,
+      1,
+      7,
+      1,
+      "INT"
+    ],
+    [
+      14,
+      2,
+      0,
+      10,
+      0,
+      "MODEL"
+    ],
+    [
+      20,
+      7,
+      0,
+      10,
+      3,
+      "LATENT"
+    ],
+    [
+      21,
+      10,
+      0,
+      13,
+      0,
+      "LATENT"
+    ],
+    [
+      22,
+      13,
+      0,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      23,
+      3,
+      0,
+      13,
+      1,
+      "VAE"
+    ],
+    [
+      27,
+      2,
+      1,
+      14,
+      0,
+      "CLIP"
+    ],
+    [
+      28,
+      2,
+      1,
+      16,
+      0,
+      "CLIP"
+    ],
+    [
+      29,
+      14,
+      0,
+      10,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      30,
+      16,
+      0,
+      10,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      33,
+      6,
+      0,
+      16,
+      1,
+      "STRING"
+    ],
+    [
+      34,
+      6,
+      0,
+      16,
+      2,
+      "STRING"
+    ],
+    [
+      35,
+      5,
+      0,
+      15,
+      0,
+      "STRING"
+    ],
+    [
+      36,
+      15,
+      0,
+      2,
+      2,
+      "STRING"
+    ],
+    [
+      37,
+      15,
+      0,
+      14,
+      1,
+      "STRING"
+    ],
+    [
+      38,
+      15,
+      0,
+      14,
+      2,
+      "STRING"
+    ],
+    [
+      39,
+      17,
+      0,
+      10,
+      4,
+      "INT"
+    ],
+    [
+      40,
+      17,
+      0,
+      15,
+      1,
+      "INT"
+    ],
+    [
+      42,
+      15,
+      0,
+      19,
+      0,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.7350219298245627,
+      "offset": [
+        -600,
+        -330
+      ]
+    },
+    "frontendVersion": "1.26.13"
+  },
+  "version": 0.4
+}
