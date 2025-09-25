@@ -1,3 +1,4 @@
 node.zip
 __pycache__
 config/resolution_combos.json
+config/lora_condition.toml.example
