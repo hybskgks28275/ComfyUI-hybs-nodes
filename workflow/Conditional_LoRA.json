@@ -1,8 +1,8 @@
 {
   "id": "1739e849-f898-4d73-9f15-2dbe7976b390",
   "revision": 0,
-  "last_node_id": 19,
-  "last_link_id": 42,
+  "last_node_id": 22,
+  "last_link_id": 52,
   "nodes": [
     {
       "id": 1,
@@ -16,7 +16,7 @@
         274
       ],
       "flags": {},
-      "order": 0,
+      "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -24,14 +24,14 @@
           "name": "model",
           "type": "MODEL",
           "links": [
-            1
+            46
           ]
         },
         {
           "name": "clip",
           "type": "CLIP",
           "links": [
-            2
+            47
           ]
         },
         {
@@ -74,63 +74,6 @@
       ]
     },
     {
-      "id": 2,
-      "type": "Conditional LoRA Loader",
-      "pos": [
-        990,
-        430
-      ],
-      "size": [
-        270,
-        98
-      ],
-      "flags": {},
-      "order": 8,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 1
-        },
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 2
-        },
-        {
-          "name": "positive",
-          "type": "STRING",
-          "link": 36
-        }
-      ],
-      "outputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "links": [
-            14
-          ]
-        },
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "links": [
-            27,
-            28
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfyui-hybs-nodes",
-        "ver": "2.0.1",
-        "Node name for S&R": "Conditional LoRA Loader"
-      },
-      "widgets_values": [
-        "sample_conditional.toml"
-      ]
-    },
-    {
       "id": 3,
       "type": "VAELoader",
       "pos": [
@@ -142,7 +85,7 @@
         58
       ],
       "flags": {},
-      "order": 1,
+      "order": 0,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -175,7 +118,7 @@
         200
       ],
       "flags": {},
-      "order": 5,
+      "order": 1,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -211,7 +154,7 @@
         200
       ],
       "flags": {},
-      "order": 3,
+      "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -248,7 +191,7 @@
         106
       ],
       "flags": {},
-      "order": 6,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -257,7 +200,7 @@
           "widget": {
             "name": "width"
           },
-          "link": 11
+          "link": 51
         },
         {
           "name": "height",
@@ -265,7 +208,7 @@
           "widget": {
             "name": "height"
           },
-          "link": 12
+          "link": 52
         }
       ],
       "outputs": [
@@ -286,46 +229,6 @@
         512,
         512,
         1
-      ]
-    },
-    {
-      "id": 8,
-      "type": "Resolution Selector",
-      "pos": [
-        1680,
-        900
-      ],
-      "size": [
-        270,
-        78
-      ],
-      "flags": {},
-      "order": 4,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "width",
-          "type": "INT",
-          "links": [
-            11
-          ]
-        },
-        {
-          "name": "height",
-          "type": "INT",
-          "links": [
-            12
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfyui-hybs-nodes",
-        "ver": "2.0.1",
-        "Node name for S&R": "Resolution Selector"
-      },
-      "widgets_values": [
-        "1344x1728"
       ]
     },
     {
@@ -375,7 +278,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 14
+          "link": 49
         },
         {
           "name": "positive",
@@ -487,7 +390,7 @@
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 27
+          "link": 48
         },
         {
           "name": "text_l",
@@ -543,7 +446,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 7,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -568,7 +471,6 @@
           "name": "STRING",
           "type": "STRING",
           "links": [
-            36,
             37,
             38,
             42
@@ -607,7 +509,7 @@
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 28
+          "link": 50
         },
         {
           "name": "text_l",
@@ -661,7 +563,7 @@
         130
       ],
       "flags": {},
-      "order": 2,
+      "order": 3,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -727,49 +629,106 @@
       "widgets_values": [
         "masterpiece, best quality, good quality, amazing quality, great quality, very aesthetic, very awa, highres, absurdres, newest, anime coloring, anime screenshot, 1girl, solo, general, loose socks, layered socks, no shoes, simple background, white background, looking at viewer, smile, sitting, indian style"
       ]
+    },
+    {
+      "id": 21,
+      "type": "HYBS_ConditionalLoRALoader",
+      "pos": [
+        990,
+        430
+      ],
+      "size": [
+        270,
+        98
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 46
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 47
+        },
+        {
+          "name": "positive",
+          "type": "STRING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            49
+          ]
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "links": [
+            48,
+            50
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-hybs-nodes",
+        "ver": "2.0.1",
+        "Node name for S&R": "HYBS_ConditionalLoRALoader"
+      },
+      "widgets_values": [
+        "sample_conditional.toml"
+      ]
+    },
+    {
+      "id": 22,
+      "type": "HYBS_ResolutionSelector",
+      "pos": [
+        1680,
+        890
+      ],
+      "size": [
+        270,
+        78
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            51
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            52
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-hybs-nodes",
+        "ver": "2.0.1",
+        "Node name for S&R": "HYBS_ResolutionSelector"
+      },
+      "widgets_values": [
+        "1344x1728"
+      ]
     }
   ],
   "links": [
-    [
-      1,
-      1,
-      0,
-      2,
-      0,
-      "MODEL"
-    ],
-    [
-      2,
-      1,
-      1,
-      2,
-      1,
-      "CLIP"
-    ],
-    [
-      11,
-      8,
-      0,
-      7,
-      0,
-      "INT"
-    ],
-    [
-      12,
-      8,
-      1,
-      7,
-      1,
-      "INT"
-    ],
-    [
-      14,
-      2,
-      0,
-      10,
-      0,
-      "MODEL"
-    ],
     [
       20,
       7,
@@ -801,22 +760,6 @@
       13,
       1,
       "VAE"
-    ],
-    [
-      27,
-      2,
-      1,
-      14,
-      0,
-      "CLIP"
-    ],
-    [
-      28,
-      2,
-      1,
-      16,
-      0,
-      "CLIP"
     ],
     [
       29,
@@ -859,14 +802,6 @@
       "STRING"
     ],
     [
-      36,
-      15,
-      0,
-      2,
-      2,
-      "STRING"
-    ],
-    [
       37,
       15,
       0,
@@ -905,16 +840,72 @@
       19,
       0,
       "STRING"
+    ],
+    [
+      46,
+      1,
+      0,
+      21,
+      0,
+      "MODEL"
+    ],
+    [
+      47,
+      1,
+      1,
+      21,
+      1,
+      "CLIP"
+    ],
+    [
+      48,
+      21,
+      1,
+      14,
+      0,
+      "CLIP"
+    ],
+    [
+      49,
+      21,
+      0,
+      10,
+      0,
+      "MODEL"
+    ],
+    [
+      50,
+      21,
+      1,
+      16,
+      0,
+      "CLIP"
+    ],
+    [
+      51,
+      22,
+      0,
+      7,
+      0,
+      "INT"
+    ],
+    [
+      52,
+      22,
+      1,
+      7,
+      1,
+      "INT"
     ]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.7350219298245627,
+      "scale": 0.808524122807019,
       "offset": [
-        -600,
-        -330
+        -349.54015656074114,
+        -308.8164581223335
       ]
     },
     "frontendVersion": "1.26.13"

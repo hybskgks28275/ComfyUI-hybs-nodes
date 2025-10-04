@@ -1,11 +1,17 @@
-from .nodes.hybs_resolution_selector import NODE_CLASS_MAPPINGS as NODE_RESOLUTION_CLASS_MAPPINGS
-from .nodes.hybs_seed_list_generator import NODE_CLASS_MAPPINGS as NODE_SEED_CLASS_MAPPINGS
-from .nodes.hybs_conditional_lora_loader import NODE_CLASS_MAPPINGS as NODE_SEED_CLASS_MAPPINGS
+from comfy_api.latest import ComfyExtension, io
 
-NODE_CLASS_MAPPINGS = {
-    **NODE_RESOLUTION_CLASS_MAPPINGS,
-    **NODE_SEED_CLASS_MAPPINGS,
-}
-NODE_DISPLAY_NAME_MAPPINGS = []
+# v3 nodes
+from .nodes.hybs_resolution_selector import HYBS_ResolutionSelector
+from .nodes.hybs_seed_list_generator import HYBS_SeedListGenerator
+from .nodes.hybs_conditional_lora_loader import HYBS_ConditionalLoRALoader
 
-__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
+class HybsNodesExtension(ComfyExtension):
+    async def get_node_list(self) -> list[type[io.ComfyNode]]:
+        return [
+            HYBS_ResolutionSelector,
+            HYBS_SeedListGenerator,
+            HYBS_ConditionalLoRALoader,
+        ]
+
+async def comfy_entrypoint() -> ComfyExtension:
+    return HybsNodesExtension()
