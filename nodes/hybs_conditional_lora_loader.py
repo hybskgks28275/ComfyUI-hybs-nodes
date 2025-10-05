@@ -14,8 +14,8 @@ import comfy.utils as utils
 # ---- Type fallback helpers ---------------------------------------------------
 def _resolve_type(name: str):
     """
-    Try io.<Name> (exact), then io.<Name in CamelCase>, and finally fall back
-    to a custom V3 type with the same name (so sockets stay link-compatible).
+    Try io.<Name>, then io.<CamelCase>, else fall back to io.Custom(name).
+    Keeps sockets link-compatible across API versions.
     """
     t = getattr(io, name, None)
     if t is not None:
@@ -112,8 +112,10 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
             outputs=[
                 _Model.Output(display_name="model"),
                 _CLIP.Output(display_name="clip"),
+                io.String.Output(display_name="applied loras"),
             ],
-            description="Conditionally apply one or more LoRAs based on regex matches in the positive prompt."
+            description='Conditionally apply LoRAs based on regex matches in the positive. '
+                        'Outputs tokens like <lora:"name":m:c> (space-separated).'
         )
 
     @staticmethod
@@ -153,15 +155,16 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
         clip,
         positive: str,
         config_toml: str
-    ) -> io.NodeOutput:
+    ):
         try:
             entries = cls._load_toml(config_toml)
         except Exception as e:
             print(f"[Conditional LoRA Loader] TOML load error: {e}")
-            return io.NodeOutput(model, clip)
+            return io.NodeOutput(model, clip, "")
 
         src = positive or ""
         applied_any = False
+        applied_tokens = []
 
         for i, ent in enumerate(entries):
             trig = ent.get("trigger", "")
@@ -185,6 +188,11 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
                     print(f"[Conditional LoRA Loader] Applied LoRA: {name} (m={sm}, c={sc})")
                     model, clip = new_model, new_clip
                     applied_any = True
+                    # Build token with filename (no extension, no quotes)
+                    base = os.path.basename(name)
+                    stem, _ = os.path.splitext(base)
+                    token = f"<lora:{stem}:{sm}:{sc}>"
+                    applied_tokens.append(token)
                 else:
                     print(f"[Conditional LoRA Loader] Failed to apply LoRA: {name}")
             except Exception as e:
@@ -193,7 +201,8 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
         if not applied_any:
             print("[Conditional LoRA Loader] No LoRA applied (passthrough)")
 
-        return io.NodeOutput(model, clip)
+        applied_str = " ".join(applied_tokens) if applied_tokens else ""
+        return io.NodeOutput(model, clip, applied_str)
 
     @classmethod
     def fingerprint_inputs(cls, config_toml=None, **kwargs):

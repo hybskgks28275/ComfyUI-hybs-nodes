@@ -74,6 +74,7 @@
 
   * `model` (MODEL)
   * `clip`  (CLIP)
+  * `appleid loras` (STRING)
 * **動作**
 
   1. 実行毎に `config/` から選択された TOML を読み込みます。さらに `IS_CHANGED` が **TOML の更新時刻（mtime）** を監視するため、TOML を保存すれば**次の実行から反映**されます。
@@ -172,12 +173,13 @@ strength_clip  = 0.6
            │   ├── lora_condition.toml.example
            │   └── resolution_combos.json.example
            ├── nodes/
+           │   ├── hybs_conditional_lora_loader.py
+           │   ├── hybs_random_resolution_selector.py
            │   ├── hybs_resolution_selector.py
-           │   ├── hybs_seed_list_generator.py
-           │   └── hybs_conditional_lora_loader.py
+           │   └── hybs_seed_list_generator.py
+           ├── hybs_resolution_common.py
            ├── LICENSE
            ├── README.md
-           ├── README_ja.md
            ├── __init__.py
            └── pyproject.toml
    ```

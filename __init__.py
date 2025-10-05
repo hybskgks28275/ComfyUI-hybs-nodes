@@ -10,7 +10,7 @@ class HybsNodesExtension(ComfyExtension):
     async def get_node_list(self) -> list[type[io.ComfyNode]]:
         return [
             HYBS_ResolutionSelector,
-            HYBS_RandomResolutionSelector,      # ★ 追加
+            HYBS_RandomResolutionSelector,
             HYBS_SeedListGenerator,
             HYBS_ConditionalLoRALoader,
         ]
