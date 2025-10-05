@@ -74,7 +74,7 @@
 
   * `model` (MODEL)
   * `clip`  (CLIP)
-  * `appleid loras` (STRING)
+  * `applied loras` (STRING)
 * **動作**
 
   1. 実行毎に `config/` から選択された TOML を読み込みます。さらに `IS_CHANGED` が **TOML の更新時刻（mtime）** を監視するため、TOML を保存すれば**次の実行から反映**されます。

@@ -71,7 +71,7 @@ Applies one or more LoRAs only when the incoming **positive** prompt matches reg
 
   * `model` (MODEL)
   * `clip`  (CLIP)
-  * `appleid loras` (STRING)
+  * `applied loras` (STRING)
 * **Behavior**:
 
   1. On each execution, the selected TOML is read from `config/`. The node’s `IS_CHANGED` includes the file’s **mtime**, so saving the TOML triggers re‑execution on the next run.
