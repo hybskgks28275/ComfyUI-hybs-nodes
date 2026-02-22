@@ -122,7 +122,7 @@ strength_model = 0.6
 strength_clip  = 0.6
 ```
 
-*Notes*
+**Notes**
 
 * Regex is evaluated with Python’s `re.search`. If you want case‑insensitive matching, add the inline flag `(?i)` at the start of your pattern.
 * Backslashes must be escaped in TOML strings (e.g., `\s`, `\b` → `\\s`, `\\b`).
@@ -198,6 +198,97 @@ strength_clip  = 0.6
 * Escape backslashes in TOML strings (e.g., `\s`, `\b`).
 * Ensure your routing uses the **LoRA-applied `clip`** for Text Encode downstream, or the LoRA will not affect conditioning.
 
+## Group Bypasser
+
+Provides a panel-based group bypass controller with optional cascade behavior using marker nodes.
+
+The panel allows enabling/disabling (bypass) of groups directly from a single node.  
+If a group contains a **Parent** marker node, bypass operations will cascade to connected **Child** groups.
+
+* **Category**: `HYBS/GroupBypasser`
+
+### Group Bypasser (Panel)
+
+A control panel node for toggling group bypass states.
+
+* **Inputs**:  
+  *(none)*
+
+* **Outputs**:  
+  *(none)*
+
+* **Behavior**:
+
+  1. Lists all groups in the current workflow.
+  2. Each group has a toggle switch for enabling/disabling (bypass).
+  3. If a group contains a **Group Bypass Parent** node, toggling that group will:
+     - Toggle the parent group.
+     - Traverse connections from the parent node to linked **Group Bypass Child** nodes.
+     - Toggle all groups containing those child nodes.
+  4. Groups containing a parent marker are labeled with `(cascade)` in the panel.
+  5. The order of groups can be customized:
+     - `order mode = auto`: Default workflow order.
+     - `order mode = custom`: Uses `order titles` list.
+  6. The `edit order` button opens a drag-and-drop dialog to reorder groups visually.
+
+---
+
+#### Group Bypass Parent
+
+A marker node that enables cascade behavior for its group.
+
+* **Inputs**:  
+  *(none)*
+
+* **Outputs**:
+
+  * `to_children` (ANY)
+
+* **Behavior**:
+
+  1. Acts as a cascade root marker.
+  2. When the containing group is toggled from the panel, connected child groups will also be toggled.
+  3. Connect this node’s output to one or more **Group Bypass Child** nodes.
+  4. This node does not provide its own toggle; all switching is controlled by the panel.
+
+---
+
+#### Group Bypass Child
+
+A marker node representing a cascade target group.
+
+* **Inputs**:
+
+  * `from_parent` (ANY)
+
+* **Outputs**:
+
+  * `to_children` (ANY)
+
+* **Behavior**:
+
+  1. Receives a connection from a **Group Bypass Parent** node.
+  2. When the parent group is toggled from the panel, the group containing this child node will also be toggled.
+  3. Child nodes may be chained to propagate cascade behavior across multiple groups.
+
+---
+
+**Usage Example**
+
+1. Place a **Group Bypass Parent** node inside the group you want to act as a cascade root.
+2. Place **Group Bypass Child** nodes inside other groups.
+3. Connect the parent node’s output to the child node’s input.
+4. Add a **Group Bypasser (Panel)** node anywhere in the workflow.
+5. Toggle the parent group from the panel to enable/disable all linked groups simultaneously.
+
+---
+
+**Notes**
+
+* Bypass state is applied by switching each node’s execution mode.
+* No workflow IDs are used; cascade relationships are determined dynamically through node connections.
+* Parent and Child nodes are frontend-controlled markers; backend execution is unaffected.
+
 ## Installation
 
 1. **Clone** this repository into your ComfyUI `custom_nodes/` folder:
@@ -218,14 +309,22 @@ strength_clip  = 0.6
            │   └── resolution_combos.json.example
            ├── nodes/
            │   ├── hybs_conditional_lora_loader.py
+           │   ├── hybs_group_bypasser_nodes.py
            │   ├── hybs_random_resolution_selector.py
            │   ├── hybs_resolution_selector.py
            │   └── hybs_seed_list_generator.py
+           ├── web/
+           │   └── js/
+           |       └── hybs_group_bypasser_linked.js
+           ├── workflow
+           |   ├── Conditional_LoRA.json
+           |   └── sample_conditional.toml
            ├── hybs_resolution_common.py
            ├── LICENSE
-           ├── README.md
            ├── __init__.py
-           └── pyproject.toml
+           ├── pyproject.toml
+           ├── README_ja.md
+           └── README.md
    ```
 
 3. **Restart** ComfyUI. The nodes **Resolution Selector**, **Random Resolution Selector** will appear under **HYBS/ResolutionSelector**, and **Conditional LoRA Loader** will appear under **HYBS/ConditionalLoRALoader**.

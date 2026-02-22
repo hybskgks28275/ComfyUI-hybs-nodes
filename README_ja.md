@@ -155,6 +155,88 @@ strength_clip  = 0.6
 * TOML 文字列ではバックスラッシュがエスケープされるため、`\s` や `\b` は `\\s` / `\\b` と記述します。
 * ルーティングでは **LoRA 適用後の `clip`** を Text Encode に渡してください。
 
+#### Group Bypasser (Panel)
+
+グループのバイパス状態を制御するパネルノードです。
+
+* **カテゴリ**: `HYBS/ConditionalLoRALoader`
+* **入力**:  
+
+  *(なし)*
+* **出力**:  
+
+  *(なし)*
+* **動作**:
+
+  1. 現在のワークフロー内に存在するすべてのグループを一覧表示します。
+  2. 各グループごとに ON/OFF トグルで bypass を切り替えできます。
+  3. グループ内に **Group Bypass Parent** ノードが存在する場合、そのグループを切り替えると:
+     - 親グループ自身を切り替え
+     - Parent ノードから接続された **Group Bypass Child** ノードを探索
+     - Child ノードを含むすべてのグループも同時に切り替えます
+  4. Parent マーカーを含むグループはパネル上で `(cascade)` と表示されます。
+  5. グループの表示順を変更できます:
+     - `order mode = auto`: ワークフローのデフォルト順
+     - `order mode = custom`: `order titles` に指定した順序を使用
+  6. `edit order` ボタンでドラッグ＆ドロップによる並び替えダイアログを開きます。
+
+---
+
+#### Group Bypass Parent
+
+カスケードの起点となるマーカーノードです。
+
+* **カテゴリ**: `HYBS/ConditionalLoRALoader`
+* **入力**:  
+
+  *(なし)*
+* **出力**:
+
+  * `to_children` (ANY)
+* **動作**:
+
+  1. カスケードのルート（起点）として機能します。
+  2. パネルからこのノードを含むグループを切り替えると、接続された Child グループも同時に切り替わります。
+  3. 出力を1つ以上の **Group Bypass Child** ノードへ接続してください。
+  4. このノード自身にはトグル機能はありません。切り替えはすべて Panel ノードから行います。
+
+---
+
+#### Group Bypass Child
+
+カスケード対象となるグループを示すマーカーノードです。
+
+* **カテゴリ**: `HYBS/ConditionalLoRALoader`
+* **入力**:
+
+  * `from_parent` (ANY)
+* **出力**:
+
+  * `to_children` (ANY)
+* **動作**:
+
+  1. **Group Bypass Parent** ノードからの接続を受け取ります。
+  2. 親グループがパネルから切り替えられた際、このノードを含むグループも同時に切り替わります。
+  3. Child ノード同士を接続することで、複数段階のカスケード構造を構築できます。
+
+---
+
+**使用例**
+
+1. カスケードの起点にしたいグループ内に **Group Bypass Parent** ノードを配置します。
+2. 連動させたい他のグループ内に **Group Bypass Child** ノードを配置します。
+3. Parent ノードの出力を Child ノードの入力へ接続します。
+4. ワークフロー内の任意の位置に **Group Bypasser (Panel)** ノードを追加します。
+5. Panel から親グループを ON/OFF すると、接続されたすべてのグループが同時に切り替わります。
+
+---
+
+**メモ**
+
+* バイパスは各ノードの execution mode を変更することで実現しています。
+* グループIDには依存せず、ノード接続関係を動的に解析してカスケードを判定します。
+* Parent / Child ノードはフロントエンド制御用のマーカーであり、バックエンドの処理結果には影響しません。
+
 ## インストール
 
 1. ComfyUI の `custom_nodes/` フォルダへクローン
@@ -163,6 +245,7 @@ strength_clip  = 0.6
    cd path/to/ComfyUI/extensions
    git clone https://github.com/hybskgks28275/ComfyUI-hybs-nodes.git
    ```
+
 2. ディレクトリ構成の確認
 
    ```text
@@ -174,15 +257,24 @@ strength_clip  = 0.6
            │   └── resolution_combos.json.example
            ├── nodes/
            │   ├── hybs_conditional_lora_loader.py
+           │   ├── hybs_group_bypasser_nodes.py
            │   ├── hybs_random_resolution_selector.py
            │   ├── hybs_resolution_selector.py
            │   └── hybs_seed_list_generator.py
+           ├── web/
+           │   └── js/
+           |       └── hybs_group_bypasser_linked.js
+           ├── workflow
+           |   ├── Conditional_LoRA.json
+           |   └── sample_conditional.toml
            ├── hybs_resolution_common.py
            ├── LICENSE
-           ├── README.md
            ├── __init__.py
-           └── pyproject.toml
+           ├── pyproject.toml
+           ├── README_ja.md
+           └── README.md
    ```
+
 3. ComfyUI を再起動
 
    * `HYBS/ResolutionSelector` 配下に **Resolution Selector**, **Random Resolution Selector**
