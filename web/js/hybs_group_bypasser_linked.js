@@ -36,7 +36,7 @@ function setGroupBypass(group, bypass) {
 function isGroupBypassed(group) {
   const nodes = recomputeGroupNodes(group);
   if (!nodes || !nodes.length) return false;
-  return nodes.some(n => n && n.mode === BYPASS_MODE);
+  return nodes.some((n) => n && n.mode === BYPASS_MODE);
 }
 
 function findGroupsContainingNode(graph, targetNode) {
@@ -52,13 +52,13 @@ function findGroupsContainingNode(graph, targetNode) {
 function getParentNodesInGroup(graph, group) {
   const nodes = recomputeGroupNodes(group);
   if (!nodes || !nodes.length) return [];
-  return nodes.filter(n => n && n.comfyClass === CT_PARENT);
+  return nodes.filter((n) => n && n.comfyClass === CT_PARENT);
 }
 
 function groupHasParentNode(graph, group) {
   const nodes = recomputeGroupNodes(group);
   if (!nodes || !nodes.length) return false;
-  return nodes.some(n => n && n.comfyClass === CT_PARENT);
+  return nodes.some((n) => n && n.comfyClass === CT_PARENT);
 }
 
 // ------------------------- link traversal -------------------------
@@ -134,7 +134,7 @@ function toggleGroupWithCascadeIfNeeded(graph, group, bypass) {
 // ------------------------- ordering (drag modal) -------------------------
 function parseOrderString(orderStr) {
   if (!orderStr || typeof orderStr !== "string") return [];
-  return orderStr.split(",").map(s => s.trim()).filter(s => s.length > 0);
+  return orderStr.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
 }
 
 function uniqPreserve(arr) {
@@ -161,8 +161,8 @@ function openDragOrderEditor(node, groups) {
   const currentTitles = groups.map(getGroupTitle);
   const desired = uniqPreserve(parseOrderString(node.properties.order_titles || ""));
   const titleSet = new Set(currentTitles);
-  const inDesired = desired.filter(t => titleSet.has(t));
-  const missing = currentTitles.filter(t => !inDesired.includes(t));
+  const inDesired = desired.filter((t) => titleSet.has(t));
+  const missing = currentTitles.filter((t) => !inDesired.includes(t));
   const initial = [...inDesired, ...missing];
 
   const overlay = document.createElement("div");
@@ -227,7 +227,7 @@ function openDragOrderEditor(node, groups) {
     }
   }
 
-  // --- Drag logic (HTML5 DnD) ---
+  // --- Drag logic (fixed: bottom->top works) ---
   let dragEl = null;
   const dropMarker = document.createElement("div");
   dropMarker.className = "hybs-drop-marker";
@@ -235,6 +235,8 @@ function openDragOrderEditor(node, groups) {
   function cleanupMarker() {
     if (dropMarker.parentElement) dropMarker.parentElement.removeChild(dropMarker);
   }
+
+  listEl.addEventListener("dragenter", (e) => e.preventDefault());
 
   listEl.addEventListener("dragstart", (e) => {
     const item = e.target.closest(".hybs-item");
@@ -270,11 +272,8 @@ function openDragOrderEditor(node, groups) {
     })();
 
     cleanupMarker();
-    if (afterEl == null) {
-      listEl.appendChild(dropMarker);
-    } else {
-      listEl.insertBefore(dropMarker, afterEl);
-    }
+    if (afterEl == null) listEl.appendChild(dropMarker);
+    else listEl.insertBefore(dropMarker, afterEl);
   });
 
   listEl.addEventListener("drop", (e) => {
@@ -284,10 +283,14 @@ function openDragOrderEditor(node, groups) {
     const markerParent = dropMarker.parentElement;
     if (!markerParent) return;
 
-    // ★ marker の位置へ dragEl を挿入してから marker を消す
+    // Insert at marker position first, then remove marker
     markerParent.insertBefore(dragEl, dropMarker);
     cleanupMarker();
   });
+
+  function getCurrentOrder() {
+    return Array.from(listEl.querySelectorAll(".hybs-item")).map((x) => x.dataset.title);
+  }
 
   function close() {
     overlay.remove();
@@ -328,10 +331,8 @@ app.registerExtension({
   async beforeRegisterNodeDef(nodeType, nodeData) {
     const classType = nodeData?.name;
 
-    // Parent / Child は UIを足さない（PanelのみでON/OFF）
-    if (classType === CT_PARENT || classType === CT_CHILD) {
-      return;
-    }
+    // Parent / Child: no UI added (Panel only toggles)
+    if (classType === CT_PARENT || classType === CT_CHILD) return;
 
     // Panel UI
     if (classType === CT_PANEL) {
@@ -381,7 +382,9 @@ app.registerExtension({
             const desired = uniqPreserve(parseOrderString(this.properties.order_titles));
             if (desired.length) {
               const desiredIndex = new Map();
-              desired.forEach((t, idx) => { if (!desiredIndex.has(t)) desiredIndex.set(t, idx); });
+              desired.forEach((t, idx) => {
+                if (!desiredIndex.has(t)) desiredIndex.set(t, idx);
+              });
 
               ordered = groups
                 .map((g, i) => ({ g, i, t: getGroupTitle(g) }))
@@ -432,7 +435,9 @@ app.registerExtension({
           }
         } catch (_) {}
 
-        try { this._hybsRebuild?.(false); } catch (_) {}
+        try {
+          this._hybsRebuild?.(false);
+        } catch (_) {}
       };
     }
   }
