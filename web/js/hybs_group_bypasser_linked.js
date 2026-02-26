@@ -25,11 +25,52 @@ function recomputeGroupNodes(group) {
   return group?._nodes ?? [];
 }
 
+// Collect Main + all subgraphs
+function getAllGraphs(rootGraph) {
+  const graphs = [];
+  const visited = new Set();
+
+  function walk(g) {
+    if (!g || visited.has(g)) return;
+    visited.add(g);
+    graphs.push(g);
+
+    const nodes = g._nodes || [];
+    for (const n of nodes) {
+      if (n && n.subgraph) walk(n.subgraph);
+    }
+  }
+
+  walk(rootGraph);
+  return graphs;
+}
+
+function getGraphLabel(graph) {
+  // LiteGraph subgraph graph may have an owner node in _subgraph_node
+  const owner = graph?._subgraph_node;
+  if (owner && typeof owner.title === "string" && owner.title.trim()) return owner.title.trim();
+  return "Main";
+}
+
+// ------------------------- bypass helpers (subgraph-aware) -------------------------
+function setNodeBypassDeep(node, bypass) {
+  if (!node) return;
+  node.mode = bypass ? BYPASS_MODE : ENABLE_MODE;
+
+  // If this node is a Subgraph node, also apply to its internal graph nodes recursively
+  const sg = node.subgraph;
+  if (sg && Array.isArray(sg._nodes)) {
+    for (const inner of sg._nodes) {
+      if (!inner) continue;
+      setNodeBypassDeep(inner, bypass);
+    }
+  }
+}
+
 function setGroupBypass(group, bypass) {
   const nodes = recomputeGroupNodes(group);
   for (const node of nodes) {
-    if (!node) continue;
-    node.mode = bypass ? BYPASS_MODE : ENABLE_MODE;
+    setNodeBypassDeep(node, bypass);
   }
 }
 
@@ -61,7 +102,7 @@ function groupHasParentNode(graph, group) {
   return nodes.some((n) => n && n.comfyClass === CT_PARENT);
 }
 
-// ------------------------- link traversal -------------------------
+// ------------------------- link traversal (per-graph) -------------------------
 function getLinkedNodesFromOutput(graph, node, outputIndex = 0) {
   const out = node.outputs?.[outputIndex];
   const linkIds = out?.links ?? [];
@@ -157,12 +198,13 @@ function escapeHtml(s) {
     .replaceAll("'", "&#039;");
 }
 
-function openDragOrderEditor(node, groups) {
-  const currentTitles = groups.map(getGroupTitle);
+function openDragOrderEditor(node, labels) {
+  // labels: array of display labels (unique-enough)
+  const currentLabels = labels.slice();
   const desired = uniqPreserve(parseOrderString(node.properties.order_titles || ""));
-  const titleSet = new Set(currentTitles);
-  const inDesired = desired.filter((t) => titleSet.has(t));
-  const missing = currentTitles.filter((t) => !inDesired.includes(t));
+  const labelSet = new Set(currentLabels);
+  const inDesired = desired.filter((t) => labelSet.has(t));
+  const missing = currentLabels.filter((t) => !inDesired.includes(t));
   const initial = [...inDesired, ...missing];
 
   const overlay = document.createElement("div");
@@ -217,12 +259,12 @@ function openDragOrderEditor(node, groups) {
 
   function render(items) {
     listEl.innerHTML = "";
-    for (const title of items) {
+    for (const label of items) {
       const div = document.createElement("div");
       div.className = "hybs-item";
       div.draggable = true;
-      div.dataset.title = title;
-      div.innerHTML = `<div class="hybs-handle">⋮⋮</div><div>${escapeHtml(title)}</div>`;
+      div.dataset.label = label;
+      div.innerHTML = `<div class="hybs-handle">⋮⋮</div><div>${escapeHtml(label)}</div>`;
       listEl.appendChild(div);
     }
   }
@@ -244,7 +286,7 @@ function openDragOrderEditor(node, groups) {
     dragEl = item;
     item.classList.add("dragging");
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", item.dataset.title);
+    e.dataTransfer.setData("text/plain", item.dataset.label);
   });
 
   listEl.addEventListener("dragend", () => {
@@ -283,13 +325,12 @@ function openDragOrderEditor(node, groups) {
     const markerParent = dropMarker.parentElement;
     if (!markerParent) return;
 
-    // Insert at marker position first, then remove marker
     markerParent.insertBefore(dragEl, dropMarker);
     cleanupMarker();
   });
 
   function getCurrentOrder() {
-    return Array.from(listEl.querySelectorAll(".hybs-item")).map((x) => x.dataset.title);
+    return Array.from(listEl.querySelectorAll(".hybs-item")).map((x) => x.dataset.label);
   }
 
   function close() {
@@ -303,7 +344,7 @@ function openDragOrderEditor(node, groups) {
   overlay.querySelector("[data-action='cancel']").addEventListener("click", close);
 
   overlay.querySelector("[data-action='reset']").addEventListener("click", () => {
-    render(currentTitles);
+    render(currentLabels);
   });
 
   overlay.querySelector("[data-action='auto']").addEventListener("click", () => {
@@ -356,7 +397,16 @@ app.registerExtension({
         }, { multiline: true });
 
         this.addWidget("button", "edit order", "edit", () => {
-          openDragOrderEditor(this, getGroups(app.graph));
+          // Pass labels (Main + subgraphs)
+          const allGraphs = getAllGraphs(app.graph);
+          const labels = [];
+          for (const gr of allGraphs) {
+            const glabel = getGraphLabel(gr);
+            for (const gp of getGroups(gr)) {
+              labels.push(`[${glabel}] ${getGroupTitle(gp)}`);
+            }
+          }
+          openDragOrderEditor(this, labels);
         });
 
         this.addWidget("button", "refresh", "refresh", () => this._hybsRebuild?.(true));
@@ -365,9 +415,22 @@ app.registerExtension({
         this._hybsStaticCount = this.widgets?.length || 0;
 
         this._hybsRebuild = (force) => {
-          const groups = getGroups(app.graph);
-          const titles = groups.map(getGroupTitle);
-          const sig = `${titles.length}:${titles.join("|")}`;
+          const allGraphs = getAllGraphs(app.graph);
+
+          // Build entries: [{ graph, group, label, index }]
+          const entries = [];
+          let idx = 0;
+          for (const gr of allGraphs) {
+            const glabel = getGraphLabel(gr);
+            const groups = getGroups(gr);
+            for (const gp of groups) {
+              const label = `[${glabel}] ${getGroupTitle(gp)}`;
+              entries.push({ graph: gr, group: gp, label, idx: idx++ });
+            }
+          }
+
+          const labels = entries.map((e) => e.label);
+          const sig = `${labels.length}:${labels.join("|")}`;
           if (!force && sig === this._hybsSig) return;
           this._hybsSig = sig;
 
@@ -376,43 +439,37 @@ app.registerExtension({
             this.widgets.splice(this._hybsStaticCount);
           }
 
-          // order groups
-          let ordered = groups.map((g, i) => ({ g, i }));
+          // order entries
+          let ordered = entries.map((e) => e);
           if (this.properties.order_mode === "custom") {
             const desired = uniqPreserve(parseOrderString(this.properties.order_titles));
             if (desired.length) {
               const desiredIndex = new Map();
-              desired.forEach((t, idx) => {
-                if (!desiredIndex.has(t)) desiredIndex.set(t, idx);
-              });
+              desired.forEach((t, i) => { if (!desiredIndex.has(t)) desiredIndex.set(t, i); });
 
-              ordered = groups
-                .map((g, i) => ({ g, i, t: getGroupTitle(g) }))
+              ordered = entries
+                .map((e) => ({ ...e, key: desiredIndex.has(e.label) ? desiredIndex.get(e.label) : Number.POSITIVE_INFINITY }))
                 .sort((a, b) => {
-                  const da = desiredIndex.has(a.t) ? desiredIndex.get(a.t) : Number.POSITIVE_INFINITY;
-                  const db = desiredIndex.has(b.t) ? desiredIndex.get(b.t) : Number.POSITIVE_INFINITY;
-                  if (da !== db) return da - db;
-                  return a.i - b.i;
-                })
-                .map(({ g, i }) => ({ g, i }));
+                  if (a.key !== b.key) return a.key - b.key;
+                  return a.idx - b.idx;
+                });
             }
           }
 
-          // build toggles
-          for (const { g } of ordered) {
-            const title = getGroupTitle(g);
-            const hasParent = groupHasParentNode(app.graph, g);
-            const label = hasParent ? `${title} (cascade)` : title;
+          // build toggles (graph-aware)
+          for (const e of ordered) {
+            const hasParent = groupHasParentNode(e.graph, e.group);
+            const label = hasParent ? `${e.label} (cascade)` : e.label;
 
-            const w = this.addWidget("toggle", label, isGroupBypassed(g), (v) => {
-              toggleGroupWithCascadeIfNeeded(app.graph, g, !!v);
+            const w = this.addWidget("toggle", label, isGroupBypassed(e.group), (v) => {
+              toggleGroupWithCascadeIfNeeded(e.graph, e.group, !!v);
             });
 
-            // bind group reference (order-safe)
-            w._hybsGroup = g;
+            w._hybsGraph = e.graph;
+            w._hybsGroup = e.group;
           }
 
-          this.setSize([this.size[0], Math.max(220, 120 + ordered.length * 28)]);
+          this.setSize([this.size[0], Math.max(240, 120 + ordered.length * 28)]);
           app.graph.setDirtyCanvas(true, true);
         };
 
@@ -435,9 +492,7 @@ app.registerExtension({
           }
         } catch (_) {}
 
-        try {
-          this._hybsRebuild?.(false);
-        } catch (_) {}
+        try { this._hybsRebuild?.(false); } catch (_) {}
       };
     }
   }
