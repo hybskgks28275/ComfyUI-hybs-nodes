@@ -8,6 +8,16 @@ const CT_CHILD  = "HYBS_GroupBypasser_Child";
 const CT_PANEL  = "HYBS_GroupBypasser_Panel";
 const PANEL_SYNC_INTERVAL_MS = 250;
 
+function markCanvasDirty() {
+  app.graph?.setDirtyCanvas?.(true, true);
+}
+
+function requestPanelSync(node, forceRebuild = false) {
+  node._hybsNeedsSync = true;
+  node._hybsRebuild?.(forceRebuild);
+  markCanvasDirty();
+}
+
 // ------------------------- graph helpers -------------------------
 function getGroups(graph) {
   return (graph && graph._groups) ? graph._groups : [];
@@ -158,7 +168,7 @@ function applyCascadeBypassFromParent(graph, parentNode, bypass) {
 
   for (const g of groupsToToggle) setGroupBypass(g, bypass);
 
-  app.graph.setDirtyCanvas(true, true);
+  markCanvasDirty();
 }
 
 // If group contains Parent marker(s), toggle by cascading for each parent.
@@ -169,7 +179,7 @@ function toggleGroupWithCascadeIfNeeded(graph, group, bypass) {
     for (const p of parents) applyCascadeBypassFromParent(graph, p, bypass);
   } else {
     setGroupBypass(group, bypass);
-    app.graph.setDirtyCanvas(true, true);
+    markCanvasDirty();
   }
 }
 
@@ -356,14 +366,14 @@ function openDragOrderEditor(node, labels) {
   overlay.querySelector("[data-action='auto']").addEventListener("click", () => {
     node.properties.order_mode = "auto";
     node.properties.order_titles = "";
-    node._hybsRebuild?.(true);
+    requestPanelSync(node, true);
     close();
   });
 
   overlay.querySelector("[data-action='save']").addEventListener("click", () => {
     node.properties.order_mode = "custom";
     node.properties.order_titles = getCurrentOrder().join(", ");
-    node._hybsRebuild?.(true);
+    requestPanelSync(node, true);
     close();
   });
 
@@ -398,14 +408,12 @@ app.registerExtension({
         // UI widgets
         this.addWidget("combo", "order mode", this.properties.order_mode, (v) => {
           this.properties.order_mode = v;
-          this._hybsNeedsSync = true;
-          this._hybsRebuild?.(true);
+          requestPanelSync(this, true);
         }, { values: ["auto", "custom"] });
 
         this.addWidget("string", "order titles", this.properties.order_titles, (v) => {
           this.properties.order_titles = v;
-          this._hybsNeedsSync = true;
-          this._hybsRebuild?.(true);
+          requestPanelSync(this, true);
         }, { multiline: true });
 
         this.addWidget("button", "edit order", "edit", () => {
@@ -423,8 +431,7 @@ app.registerExtension({
         });
 
         this.addWidget("button", "refresh", "refresh", () => {
-          this._hybsNeedsSync = true;
-          this._hybsRebuild?.(true);
+          requestPanelSync(this, true);
         });
 
         // static widget count (everything after this is dynamic toggles)
@@ -479,10 +486,8 @@ app.registerExtension({
 
             const w = this.addWidget("toggle", label, isGroupBypassed(e.group), (v) => {
               toggleGroupWithCascadeIfNeeded(e.graph, e.group, !!v);
-              this._hybsNeedsSync = true;
               // Force immediate UI rebind so cascade-target toggles reflect new state.
-              this._hybsRebuild?.(true);
-              app.graph?.setDirtyCanvas?.(true, true);
+              requestPanelSync(this, true);
             });
 
             w._hybsGraph = e.graph;
@@ -491,7 +496,7 @@ app.registerExtension({
 
           this.setSize([this.size[0], Math.max(240, 120 + ordered.length * 28)]);
           this._hybsNeedsSync = true;
-          app.graph.setDirtyCanvas(true, true);
+          markCanvasDirty();
         };
 
         this._hybsSyncToggleState = () => {
@@ -510,9 +515,7 @@ app.registerExtension({
         const scheduleBootstrapRebuild = (delayMs) => {
           setTimeout(() => {
             try {
-              this._hybsNeedsSync = true;
-              this._hybsRebuild?.(true);
-              app.graph?.setDirtyCanvas?.(true, true);
+              requestPanelSync(this, true);
             } catch (_) {}
           }, delayMs);
         };
@@ -524,9 +527,7 @@ app.registerExtension({
       nodeType.prototype.onConfigure = function () {
         onConfigure?.apply(this, arguments);
         try {
-          this._hybsNeedsSync = true;
-          this._hybsRebuild?.(true);
-          app.graph?.setDirtyCanvas?.(true, true);
+          requestPanelSync(this, true);
         } catch (_) {}
       };
 

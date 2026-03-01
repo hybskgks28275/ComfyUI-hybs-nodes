@@ -1,5 +1,9 @@
+"""Conditional LoRA loader node."""
+
 import os
 import re
+from typing import Any
+
 from ..hybs_comfy_api import io
 
 try:
@@ -9,6 +13,12 @@ except Exception:
 
 import folder_paths
 import comfy.utils as utils
+
+LOG_PREFIX = "[Conditional LoRA Loader]"
+
+
+def _log(message: str) -> None:
+    print(f"{LOG_PREFIX} {message}")
 
 
 # ---- Type fallback helpers ---------------------------------------------------
@@ -29,7 +39,7 @@ def _resolve_type(name: str):
     return io.Custom(name)
 
 _Model = _resolve_type("Model")
-_CLIP  = _resolve_type("CLIP")
+_CLIP = _resolve_type("CLIP")
 
 
 # ---- Internal: LoRA applier --------------------------------------------------
@@ -40,7 +50,7 @@ def _apply_lora(model, clip, lora_path: str, lora_name: str, sm: float, sc: floa
             m, c = sd.load_lora(model, clip, lora_path, sm, sc)
             return m, c, True
         except Exception as e:
-            print(f"[Conditional LoRA Loader] comfy.sd.load_lora failed: {e}")
+            _log(f"comfy.sd.load_lora failed: {e}")
 
     # 2) built-in nodes.LoraLoader
     try:
@@ -49,7 +59,7 @@ def _apply_lora(model, clip, lora_path: str, lora_name: str, sm: float, sc: floa
             m, c = _BuiltinLoraLoader().load_lora(model, clip, lora_name, sm, sc)
             return m, c, True
         except Exception as e:
-            print(f"[Conditional LoRA Loader] nodes.LoraLoader failed: {e}")
+            _log(f"nodes.LoraLoader failed: {e}")
     except Exception:
         pass
 
@@ -62,9 +72,9 @@ def _apply_lora(model, clip, lora_path: str, lora_name: str, sm: float, sc: floa
                 clip = utils.apply_lora_to_clip(clip, lora, sc)
             return model, clip, True
     except Exception as e:
-        print(f"[Conditional LoRA Loader] fallback apply_lora failed: {e}")
+        _log(f"fallback apply_lora failed: {e}")
 
-    print("[Conditional LoRA Loader] All loaders failed -> passthrough.")
+    _log("All loaders failed -> passthrough.")
     return model, clip, False
 
 
@@ -73,7 +83,7 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
     CONFIG_DIR = None
 
     @classmethod
-    def _ensure_config_dir(cls):
+    def _ensure_config_dir(cls) -> str:
         if cls.CONFIG_DIR is None:
             base = os.path.dirname(os.path.dirname(__file__))
             cls.CONFIG_DIR = os.path.join(base, "config")
@@ -81,7 +91,7 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
         return cls.CONFIG_DIR
 
     @classmethod
-    def _list_toml(cls):
+    def _list_toml(cls) -> list[str]:
         cdir = cls._ensure_config_dir()
         files = [f for f in os.listdir(cdir) if f.lower().endswith(".toml")]
         return sorted(files) if files else ["<put .toml in config>"]
@@ -127,11 +137,11 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
         try:
             return re.search(pattern, positive or "") is not None
         except re.error as e:
-            print(f"[Conditional LoRA Loader] Invalid regex in TOML: {e}")
+            _log(f"Invalid regex in TOML: {e}")
             return False
 
     @classmethod
-    def _load_toml(cls, fname: str):
+    def _load_toml(cls, fname: str) -> list[dict[str, Any]]:
         full = os.path.join(cls._ensure_config_dir(), fname)
         if not os.path.isfile(full):
             raise FileNotFoundError(full)
@@ -157,11 +167,11 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
         clip,
         positive: str,
         config_toml: str
-    ):
+    ) -> io.NodeOutput:
         try:
             entries = cls._load_toml(config_toml)
         except Exception as e:
-            print(f"[Conditional LoRA Loader] TOML load error: {e}")
+            _log(f"TOML load error: {e}")
             return io.NodeOutput(model, clip, "")
 
         src = positive or ""
@@ -175,19 +185,19 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
             sc = float(ent.get("strength_clip", 1.0))
 
             matched = cls._match(src, trig)
-            print(f"[Conditional LoRA Loader] #{i} matched={matched} trigger={trig!r} name={name!r} sm={sm} sc={sc}")
+            _log(f"#{i} matched={matched} trigger={trig!r} name={name!r} sm={sm} sc={sc}")
             if not matched:
                 continue
 
             lora_path = folder_paths.get_full_path("loras", name)
             if not lora_path:
-                print(f"[Conditional LoRA Loader] LoRA not found: {name}")
+                _log(f"LoRA not found: {name}")
                 continue
 
             try:
                 new_model, new_clip, applied = _apply_lora(model, clip, lora_path, name, sm, sc)
                 if applied:
-                    print(f"[Conditional LoRA Loader] Applied LoRA: {name} (m={sm}, c={sc})")
+                    _log(f"Applied LoRA: {name} (m={sm}, c={sc})")
                     model, clip = new_model, new_clip
                     applied_any = True
                     # Build token with filename (no extension, no quotes)
@@ -196,18 +206,18 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
                     token = f"<lora:{stem}:{sm}:{sc}>"
                     applied_tokens.append(token)
                 else:
-                    print(f"[Conditional LoRA Loader] Failed to apply LoRA: {name}")
+                    _log(f"Failed to apply LoRA: {name}")
             except Exception as e:
-                print(f"[Conditional LoRA Loader] Exception while applying LoRA {name!r}: {e}")
+                _log(f"Exception while applying LoRA {name!r}: {e}")
 
         if not applied_any:
-            print("[Conditional LoRA Loader] No LoRA applied (passthrough)")
+            _log("No LoRA applied (passthrough)")
 
         applied_str = " ".join(applied_tokens) if applied_tokens else ""
         return io.NodeOutput(model, clip, applied_str)
 
     @classmethod
-    def fingerprint_inputs(cls, config_toml=None, **kwargs):
+    def fingerprint_inputs(cls, config_toml=None, **kwargs) -> str:
         try:
             base = cls._ensure_config_dir()
             path = os.path.join(base, config_toml) if config_toml else None

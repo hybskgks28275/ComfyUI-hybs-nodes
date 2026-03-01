@@ -1,7 +1,12 @@
+"""Random resolution selector node."""
+
 from ..hybs_comfy_api import io
 from ..hybs_resolution_common import load_resolution_combos, get_resolution_config_mtime
 
+
 class HYBS_RandomResolutionSelector(io.ComfyNode):
+    """Select a deterministic resolution based on seed and combo list."""
+
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
@@ -17,13 +22,13 @@ class HYBS_RandomResolutionSelector(io.ComfyNode):
 
     @classmethod
     def execute(cls, seed: int) -> io.NodeOutput:
-        combos = load_resolution_combos()  # reload every execution
+        combos = load_resolution_combos()  # Reload every execution.
         idx = seed % len(combos)
         w, h = combos[idx]
         return io.NodeOutput(w, h)
 
     @classmethod
-    def fingerprint_inputs(cls, seed: int = 0, **kwargs):
-        # Re-run when JSON changes by including its mtime
+    def fingerprint_inputs(cls, seed: int = 0, **kwargs) -> str:
+        # Re-run when JSON changes by including its mtime.
         mtime = get_resolution_config_mtime()
         return f"{seed}:{mtime}"

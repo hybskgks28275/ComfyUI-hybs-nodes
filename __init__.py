@@ -1,3 +1,5 @@
+"""ComfyUI-hybs-nodes extension entrypoint."""
+
 from .hybs_comfy_api import ComfyExtension, io
 
 print("[HYBS] __init__.py import start")
@@ -16,6 +18,8 @@ from .nodes.hybs_group_bypasser_nodes import (
 )
 
 class HybsNodesExtension(ComfyExtension):
+    """Comfy extension wrapper for HYBS custom nodes."""
+
     async def get_node_list(self) -> list[type[io.ComfyNode]]:
         return [
             HYBS_ResolutionSelector,
@@ -26,6 +30,7 @@ class HybsNodesExtension(ComfyExtension):
             HYBS_GroupBypasser_Child,
             HYBS_GroupBypasser_Panel,
         ]
+
 
 async def comfy_entrypoint() -> ComfyExtension:
     return HybsNodesExtension()

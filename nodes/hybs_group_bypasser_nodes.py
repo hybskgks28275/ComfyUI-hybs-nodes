@@ -1,8 +1,13 @@
+"""Backend marker nodes for Group Bypasser frontend UI."""
+
 from ..hybs_comfy_api import io
 
 _ANY = io.Custom("ANY")
 
+
 class HYBS_GroupBypasser_Parent(io.ComfyNode):
+    """Cascade source marker node."""
+
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
@@ -19,12 +24,14 @@ class HYBS_GroupBypasser_Parent(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls):
-        # Backend no-op: output nothing meaningful (marker only)
+    def execute(cls) -> io.NodeOutput:
+        # Backend no-op marker.
         return io.NodeOutput(None)
 
 
 class HYBS_GroupBypasser_Child(io.ComfyNode):
+    """Cascade target marker node."""
+
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
@@ -43,11 +50,13 @@ class HYBS_GroupBypasser_Child(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, from_parent=None):
+    def execute(cls, from_parent=None) -> io.NodeOutput:
         return io.NodeOutput(from_parent)
 
 
 class HYBS_GroupBypasser_Panel(io.ComfyNode):
+    """Frontend-only group bypass panel node."""
+
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
@@ -62,5 +71,5 @@ class HYBS_GroupBypasser_Panel(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls):
+    def execute(cls) -> io.NodeOutput:
         return io.NodeOutput()

@@ -1,8 +1,13 @@
+"""Seed list generator node."""
+
 import random
 from typing import List
 from ..hybs_comfy_api import io
 
+
 class HYBS_SeedListGenerator(io.ComfyNode):
+    """Generate a list of random 32-bit seeds."""
+
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
