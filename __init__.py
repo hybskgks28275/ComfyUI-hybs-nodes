@@ -2,7 +2,7 @@
 
 from .hybs_comfy_api import ComfyExtension, io
 
-print("[HYBS] __init__.py import start")
+print('[HYBS]["Extension"] __init__.py import start')
 
 WEB_DIRECTORY = "./web/js"
 

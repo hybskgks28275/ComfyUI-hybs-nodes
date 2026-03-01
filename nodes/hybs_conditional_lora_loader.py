@@ -14,7 +14,7 @@ except Exception:
 import folder_paths
 import comfy.utils as utils
 
-LOG_PREFIX = "[Conditional LoRA Loader]"
+LOG_PREFIX = '[HYBS]["Conditional LoRA Loader"]'
 
 
 def _log(message: str) -> None:

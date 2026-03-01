@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import traceback
 
+LOG_PREFIX = '[HYBS]["ComfyAPI"]'
+
 try:
     from comfy_api.latest import ComfyExtension, io
 except Exception as exc:  # pragma: no cover - runtime compatibility path
-    print(f"[HYBS] comfy_api.latest import failed, fallback to comfy_api: {exc}")
+    print(f"{LOG_PREFIX} comfy_api.latest import failed, fallback to comfy_api: {exc}")
     traceback.print_exc()
     from comfy_api import ComfyExtension, io
 
