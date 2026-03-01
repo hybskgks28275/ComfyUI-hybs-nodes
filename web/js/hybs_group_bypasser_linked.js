@@ -6,6 +6,7 @@ const ENABLE_MODE = LiteGraph.ALWAYS;
 const CT_PARENT = "HYBS_GroupBypasser_Parent";
 const CT_CHILD  = "HYBS_GroupBypasser_Child";
 const CT_PANEL  = "HYBS_GroupBypasser_Panel";
+const PANEL_SYNC_INTERVAL_MS = 250;
 
 // ------------------------- graph helpers -------------------------
 function getGroups(graph) {
@@ -199,6 +200,8 @@ function escapeHtml(s) {
 }
 
 function openDragOrderEditor(node, labels) {
+  node._hybsCloseEditor?.();
+
   // labels: array of display labels (unique-enough)
   const currentLabels = labels.slice();
   const desired = uniqPreserve(parseOrderString(node.properties.order_titles || ""));
@@ -336,6 +339,9 @@ function openDragOrderEditor(node, labels) {
   function close() {
     overlay.remove();
     style.remove();
+    if (node._hybsCloseEditor === close) {
+      node._hybsCloseEditor = null;
+    }
   }
 
   closeBtn.addEventListener("click", close);
@@ -362,7 +368,9 @@ function openDragOrderEditor(node, labels) {
   });
 
   render(initial);
+  node._hybsCloseEditor = close;
   document.body.appendChild(overlay);
+  return close;
 }
 
 // ------------------------- ComfyUI extension hook -------------------------
@@ -384,15 +392,19 @@ app.registerExtension({
         this.properties = this.properties || {};
         if (this.properties.order_mode === undefined) this.properties.order_mode = "auto";
         if (this.properties.order_titles === undefined) this.properties.order_titles = "";
+        this._hybsNeedsSync = true;
+        this._hybsLastSyncAt = 0;
 
         // UI widgets
         this.addWidget("combo", "order mode", this.properties.order_mode, (v) => {
           this.properties.order_mode = v;
+          this._hybsNeedsSync = true;
           this._hybsRebuild?.(true);
         }, { values: ["auto", "custom"] });
 
         this.addWidget("string", "order titles", this.properties.order_titles, (v) => {
           this.properties.order_titles = v;
+          this._hybsNeedsSync = true;
           this._hybsRebuild?.(true);
         }, { multiline: true });
 
@@ -406,10 +418,14 @@ app.registerExtension({
               labels.push(`[${glabel}] ${getGroupTitle(gp)}`);
             }
           }
+          this._hybsNeedsSync = true;
           openDragOrderEditor(this, labels);
         });
 
-        this.addWidget("button", "refresh", "refresh", () => this._hybsRebuild?.(true));
+        this.addWidget("button", "refresh", "refresh", () => {
+          this._hybsNeedsSync = true;
+          this._hybsRebuild?.(true);
+        });
 
         // static widget count (everything after this is dynamic toggles)
         this._hybsStaticCount = this.widgets?.length || 0;
@@ -463,6 +479,10 @@ app.registerExtension({
 
             const w = this.addWidget("toggle", label, isGroupBypassed(e.group), (v) => {
               toggleGroupWithCascadeIfNeeded(e.graph, e.group, !!v);
+              this._hybsNeedsSync = true;
+              // Force immediate UI rebind so cascade-target toggles reflect new state.
+              this._hybsRebuild?.(true);
+              app.graph?.setDirtyCanvas?.(true, true);
             });
 
             w._hybsGraph = e.graph;
@@ -470,18 +490,11 @@ app.registerExtension({
           }
 
           this.setSize([this.size[0], Math.max(240, 120 + ordered.length * 28)]);
+          this._hybsNeedsSync = true;
           app.graph.setDirtyCanvas(true, true);
         };
 
-        this._hybsRebuild(true);
-      };
-
-      // keep toggle states synced
-      const onDrawForeground = nodeType.prototype.onDrawForeground;
-      nodeType.prototype.onDrawForeground = function () {
-        onDrawForeground?.apply(this, arguments);
-
-        try {
+        this._hybsSyncToggleState = () => {
           const start = this._hybsStaticCount ?? 0;
           for (let i = start; i < (this.widgets?.length || 0); i++) {
             const w = this.widgets[i];
@@ -490,9 +503,54 @@ app.registerExtension({
             if (!g) continue;
             w.value = isGroupBypassed(g);
           }
-        } catch (_) {}
+        };
 
+        this._hybsRebuild(true);
+        // Workflow load timing can delay group availability. Rebuild again shortly after creation.
+        const scheduleBootstrapRebuild = (delayMs) => {
+          setTimeout(() => {
+            try {
+              this._hybsNeedsSync = true;
+              this._hybsRebuild?.(true);
+              app.graph?.setDirtyCanvas?.(true, true);
+            } catch (_) {}
+          }, delayMs);
+        };
+        scheduleBootstrapRebuild(0);
+        scheduleBootstrapRebuild(200);
+      };
+
+      const onConfigure = nodeType.prototype.onConfigure;
+      nodeType.prototype.onConfigure = function () {
+        onConfigure?.apply(this, arguments);
+        try {
+          this._hybsNeedsSync = true;
+          this._hybsRebuild?.(true);
+          app.graph?.setDirtyCanvas?.(true, true);
+        } catch (_) {}
+      };
+
+      const onRemoved = nodeType.prototype.onRemoved;
+      nodeType.prototype.onRemoved = function () {
+        try { this._hybsCloseEditor?.(); } catch (_) {}
+        onRemoved?.apply(this, arguments);
+      };
+
+      // keep toggle states synced
+      const onDrawForeground = nodeType.prototype.onDrawForeground;
+      nodeType.prototype.onDrawForeground = function () {
+        onDrawForeground?.apply(this, arguments);
+
+        const now = Date.now();
+        const last = this._hybsLastSyncAt || 0;
+        if (!this._hybsNeedsSync && now - last < PANEL_SYNC_INTERVAL_MS) {
+          return;
+        }
+        this._hybsLastSyncAt = now;
+
+        try { this._hybsSyncToggleState?.(); } catch (_) {}
         try { this._hybsRebuild?.(false); } catch (_) {}
+        this._hybsNeedsSync = false;
       };
     }
   }

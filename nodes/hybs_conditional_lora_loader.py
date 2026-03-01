@@ -1,6 +1,6 @@
 import os
 import re
-from comfy_api.latest import io
+from ..hybs_comfy_api import io
 
 try:
     from comfy import sd
@@ -93,6 +93,8 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
             node_id="HYBS_ConditionalLoRALoader",
             display_name="Conditional LoRA Loader",
             category="HYBS/ConditionalLoRALoader",
+            search_aliases=["lora", "regex lora", "conditional lora", "prompt match lora"],
+            essentials_category="Loaders/LoRA",
             inputs=[
                 _Model.Input("model"),
                 _CLIP.Input("clip"),

@@ -1,4 +1,4 @@
-from comfy_api.latest import io
+from ..hybs_comfy_api import io
 
 _ANY = io.Custom("ANY")
 
@@ -9,6 +9,8 @@ class HYBS_GroupBypasser_Parent(io.ComfyNode):
             node_id="HYBS_GroupBypasser_Parent",
             display_name="Group Bypass Parent",
             category="HYBS/GroupBypasser",
+            search_aliases=["group bypass parent", "cascade parent", "group marker parent"],
+            essentials_category="Workflow/Control",
             inputs=[],
             outputs=[
                 _ANY.Output(display_name="to_children"),
@@ -29,6 +31,8 @@ class HYBS_GroupBypasser_Child(io.ComfyNode):
             node_id="HYBS_GroupBypasser_Child",
             display_name="Group Bypass Child",
             category="HYBS/GroupBypasser",
+            search_aliases=["group bypass child", "cascade child", "group marker child"],
+            essentials_category="Workflow/Control",
             inputs=[
                 _ANY.Input("from_parent", tooltip="UI only. Link marker."),
             ],
@@ -50,6 +54,8 @@ class HYBS_GroupBypasser_Panel(io.ComfyNode):
             node_id="HYBS_GroupBypasser_Panel",
             display_name="Group Bypasser",
             category="HYBS/GroupBypasser",
+            search_aliases=["group bypass", "panel", "group toggle", "cascade toggle"],
+            essentials_category="Workflow/Control",
             inputs=[],
             outputs=[],
             description="Frontend-only panel. Backend no-op.",

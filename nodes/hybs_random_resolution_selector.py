@@ -1,4 +1,4 @@
-from comfy_api.latest import io
+from ..hybs_comfy_api import io
 from ..hybs_resolution_common import load_resolution_combos, get_resolution_config_mtime
 
 class HYBS_RandomResolutionSelector(io.ComfyNode):
@@ -8,6 +8,8 @@ class HYBS_RandomResolutionSelector(io.ComfyNode):
             node_id="HYBS_RandomResolutionSelector",
             display_name="Random Resolution Selector",
             category="HYBS/ResolutionSelector",
+            search_aliases=["random resolution", "size by seed", "deterministic size"],
+            essentials_category="Utilities/Resolution",
             inputs=[io.Int.Input("seed", default=0, min=0, tooltip="Deterministic pick: index = seed % len(combos)")],
             outputs=[io.Int.Output(display_name="width"), io.Int.Output(display_name="height")],
             description="Selects a (width, height) from a list based on seed. Reloads JSON on every execution."
