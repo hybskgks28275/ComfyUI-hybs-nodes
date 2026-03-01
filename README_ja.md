@@ -133,6 +133,17 @@ strength_clip  = 1.0
 
 ## インストール
 
+以下のいずれかの方法でインストールしてください。
+
+### 方法1: ComfyUI Manager（Registry）
+
+1. ComfyUI Manager を開きます。
+2. Custom Nodes Manager で `ComfyUI-hybs-nodes` を検索します。
+3. インストールします。
+4. ComfyUI を再起動します。
+
+### 方法2: 手動インストール
+
 1. `ComfyUI/custom_nodes/` にクローン:
 
 ```bash

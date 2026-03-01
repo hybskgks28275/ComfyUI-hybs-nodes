@@ -133,6 +133,17 @@ Notes:
 
 ## Installation
 
+Install this extension using either method below.
+
+### Option 1: ComfyUI Manager (Registry)
+
+1. Open ComfyUI Manager.
+2. In Custom Nodes Manager, search for `ComfyUI-hybs-nodes`.
+3. Install it.
+4. Restart ComfyUI.
+
+### Option 2: Manual install
+
 1. Clone into `ComfyUI/custom_nodes/`:
 
 ```bash
