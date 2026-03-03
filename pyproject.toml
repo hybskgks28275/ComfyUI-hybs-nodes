@@ -1,8 +1,8 @@
 [project]
 name = "ComfyUI-hybs-nodes"
 description = "Various custom nodes will be added."
-version = "3.0.2"
-license = "LICENSE"
+version = "4.0.0"
+license = {file = "LICENSE"}
 
 [project.urls]
 Repository = "https://github.com/hybskgks28275/ComfyUI-hybs-nodes"

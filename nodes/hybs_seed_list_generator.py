@@ -1,14 +1,21 @@
+"""Seed list generator node."""
+
 import random
 from typing import List
-from comfy_api.latest import io
+from ..hybs_comfy_api import io
+
 
 class HYBS_SeedListGenerator(io.ComfyNode):
+    """Generate a list of random 32-bit seeds."""
+
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="HYBS_SeedListGenerator",
             display_name="Seed List Generator",
             category="HYBS/SeedGenerator",
+            search_aliases=["seed", "random seed list", "batch seeds"],
+            essentials_category="Utilities/Seed",
             inputs=[
                 io.Int.Input("count", default=1, min=1, max=0xffffffffffffffff),
             ],
