@@ -11,6 +11,7 @@ from .nodes.hybs_resolution_selector import HYBS_ResolutionSelector
 from .nodes.hybs_random_resolution_selector import HYBS_RandomResolutionSelector
 from .nodes.hybs_seed_list_generator import HYBS_SeedListGenerator
 from .nodes.hybs_conditional_lora_loader import HYBS_ConditionalLoRALoader
+from .nodes.hybs_diffusion_model_list import HYBS_DiffusionModelList
 from .nodes.hybs_group_bypasser_nodes import (
     HYBS_GroupBypasser_Parent,
     HYBS_GroupBypasser_Child,
@@ -26,6 +27,7 @@ class HybsNodesExtension(ComfyExtension):
             HYBS_RandomResolutionSelector,
             HYBS_SeedListGenerator,
             HYBS_ConditionalLoRALoader,
+            HYBS_DiffusionModelList,
             HYBS_GroupBypasser_Parent,
             HYBS_GroupBypasser_Child,
             HYBS_GroupBypasser_Panel,

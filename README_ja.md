@@ -69,6 +69,22 @@ ComfyUI 向けのカスタムノード集です。解像度ユーティリティ
   - LoRA 適用後の `model`/`clip` を下流へ接続してください。
   - Text Encode は LoRA 適用後に実行してください。
 
+### Diffusion Model List
+
+- カテゴリ: `HYBS/Model`
+- 入力:
+  - `model` (COMBO, 自動追加)
+- 出力:
+  - `model names` (LIST)
+  - `count` (INT)
+- 動作:
+  - `diffusion_models` フォルダの内容をプルダウンで選択します。
+  - 最初は 1 つだけ表示され、モデルを選ぶごとに次の選択欄が追加されます。
+  - 選択した UNet ファイル名を list で返します。
+  - `count` は実際にモデル名が選択された項目だけを数えます。
+  - `model names` は表示されているプルダウン順のまま返します。
+  - ComfyLab の `XY Plot` では、ラベル用途に `model names` を使い、必要に応じて標準の diffusion model ノードと組み合わせてください。
+
 ### Group Bypasser
 
 以下 3 ノードのカテゴリは共通で `HYBS/GroupBypasser` です。
