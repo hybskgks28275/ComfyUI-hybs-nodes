@@ -2,6 +2,8 @@
 
 Custom nodes for ComfyUI, including resolution utilities, conditional LoRA loading, and group bypass control.
 
+[日本語はこちら](README_ja.md)
+
 ## Compatibility
 
 - Backend: V3 schema (`ComfyNode`, `Schema`, `ComfyExtension`, `comfy_entrypoint`)
@@ -68,6 +70,22 @@ Custom nodes for ComfyUI, including resolution utilities, conditional LoRA loadi
 - Wiring note:
   - Use LoRA-applied `model`/`clip` outputs downstream.
   - Text encoding must happen after LoRA application.
+
+### Diffusion Model List
+
+- Category: `HYBS/Model`
+- Inputs:
+  - `model` (COMBO, auto-growing)
+- Outputs:
+  - `model names` (LIST)
+  - `count` (INT)
+- Behavior:
+  - Uses dropdowns populated from the `diffusion_models` folder.
+  - Starts with one dropdown and adds another as models are selected.
+  - Returns the selected UNet filenames as a list.
+  - `count` increases only for dropdowns with an actual model selected.
+  - `model names` keeps the same order as the visible dropdowns.
+  - For ComfyLab `XY Plot`, use `model names` as the label source and pair it with a standard ComfyUI diffusion model node as needed.
 
 ### Group Bypasser
 
