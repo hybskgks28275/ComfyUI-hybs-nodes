@@ -80,7 +80,7 @@ Custom nodes for ComfyUI, including resolution utilities, conditional LoRA loadi
   - `model names` (LIST)
   - `count` (INT)
 - Behavior:
-  - Uses dropdowns populated from the `diffusion_models` folder.
+  - Uses dropdowns populated from the `models/unet` folder.
   - Starts with one dropdown and adds another as models are selected.
   - Returns the selected UNet filenames as a list.
   - `count` increases only for dropdowns with an actual model selected.
