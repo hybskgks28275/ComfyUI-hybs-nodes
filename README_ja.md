@@ -85,6 +85,31 @@ ComfyUI 向けのカスタムノード集です。解像度ユーティリティ
   - `model names` は表示されているプルダウン順のまま返します。
   - ComfyLab の `XY Plot` では、ラベル用途に `model names` を使い、必要に応じて標準の diffusion model ノードと組み合わせてください。
 
+### Load Image Prompt Metadata
+
+- カテゴリ: `HYBS/LoadImage`
+- 入力:
+  - `image` (COMBO/upload): ComfyUI の input フォルダ内の画像
+  - `positive_node_id` (STRING): positive prompt として読むノード ID
+  - `negative_node_id` (STRING): negative prompt として読むノード ID
+- 出力:
+  - `IMAGE`
+  - `positive` (STRING)
+  - `negative` (STRING)
+- 動作:
+  - 選択した画像を Load Image ノード相当で読み込みます。
+  - 画像内に ComfyUI workflow メタデータがある場合に読み取ります。
+  - img2img / i2i などで、元画像に埋め込まれたプロンプトを再利用したい場合に使えます。
+  - `id` が一致するノードを探し、そのノードの `widgets_values` 内で最初に見つかった文字列を返します。
+  - 実行用の `prompt` メタデータ形式もノード ID で読み、`inputs.text` がある場合はそれを返します。
+  - ノード ID は意図的に空欄がデフォルトです。元ワークフロー上の positive/negative prompt ノード ID を入力してください。
+  - `82:78` のようなサブグラフ ID にも対応します。
+  - workflow/prompt メタデータがない場合や、指定 ID からプロンプト文字列を取得できない場合はエラーになります。
+- サンプル:
+  - `workflow/LoadImagePromptMetafata.json` を開いてください。
+  - サンプル元画像として `workflow/LoadImageSample.png` を使用します。
+  - サンプル画像には、ノード ID で読み取れるプロンプトメタデータが埋め込まれています。
+
 ### Group Bypasser
 
 以下 3 ノードのカテゴリは共通で `HYBS/GroupBypasser` です。
