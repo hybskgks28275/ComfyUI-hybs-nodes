@@ -106,9 +106,25 @@ ComfyUI 向けのカスタムノード集です。解像度ユーティリティ
   - `82:78` のようなサブグラフ ID にも対応します。
   - workflow/prompt メタデータがない場合や、指定 ID からプロンプト文字列を取得できない場合はエラーになります。
 - サンプル:
-  - `workflow/LoadImagePromptMetafata.json` を開いてください。
+  - `workflow/LoadImagePromptMetadata.json` を開いてください。
   - サンプル元画像として `workflow/LoadImageSample.png` を使用します。
   - サンプル画像には、ノード ID で読み取れるプロンプトメタデータが埋め込まれています。
+
+### Load Image Prompt Metadata Advance
+
+- カテゴリ: `HYBS/LoadImage`
+- 入力:
+  - `image` (COMBO/upload): ComfyUI の input フォルダ内の画像
+  - `node id 1`, `node id 2`, ...: 取得したいプロンプトのノード ID。初期は 1 行で、入力すると追加できます。
+- 出力:
+  - `IMAGE`
+  - `prompt_1`, `prompt_2`, ... (STRING): ノード ID 行に合わせて増える個別プロンプト出力
+- 動作:
+  - img2img / i2i で、元画像メタデータから positive/negative 以外も含めて複数のプロンプトを読みたい場合に使えます。
+  - 各ノード ID は `Load Image Prompt Metadata` と同じ方法で解決します。
+  - 空欄行は無視され、次のノード ID を追加するための空欄と `prompt_#` 出力が末尾に 1 つ残ります。
+  - 最大 20 個のプロンプトノード ID を指定できます。
+  - ノード ID が 1 つもない場合、メタデータがない場合、または指定 ID のいずれかからプロンプト文字列を取得できない場合はエラーになります。
 
 ### Group Bypasser
 
