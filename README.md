@@ -108,9 +108,25 @@ Custom nodes for ComfyUI, including resolution utilities, conditional LoRA loadi
   - Subgraph IDs such as `82:78` are supported.
   - Raises an error when workflow/prompt metadata is missing or the specified IDs do not resolve to prompt text.
 - Sample:
-  - Open `workflow/LoadImagePromptMetafata.json`.
+  - Open `workflow/LoadImagePromptMetadata.json`.
   - Use `workflow/LoadImageSample.png` as the sample source image.
   - The sample image contains embedded prompt metadata that can be read by node ID.
+
+### Load Image Prompt Metadata Advance
+
+- Category: `HYBS/LoadImage`
+- Inputs:
+  - `image` (COMBO/upload): image from the ComfyUI input folder
+  - `node id 1`, `node id 2`, ...: prompt node IDs, starting with one row and growing as you fill them
+- Outputs:
+  - `IMAGE`
+  - `prompt_1`, `prompt_2`, ... (STRING): individual prompt outputs that grow with the node ID rows
+- Behavior:
+  - Use this when img2img/i2i workflows need to read more than positive/negative from source-image metadata.
+  - Each node ID is resolved the same way as `Load Image Prompt Metadata`.
+  - Blank rows are ignored, and an empty row plus its `prompt_#` output is kept at the end for adding the next prompt node ID.
+  - Up to 20 prompt node IDs can be used.
+  - Raises an error when no prompt node ID is provided, metadata is missing, or any specified ID does not resolve to prompt text.
 
 ### Group Bypasser
 

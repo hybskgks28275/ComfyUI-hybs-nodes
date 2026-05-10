@@ -17,6 +17,7 @@ import folder_paths
 from ..hybs_comfy_api import io
 
 LOG_PREFIX = '[HYBS]["Load Image Prompt Metadata"]'
+ADVANCED_MAX_PROMPTS = 20
 
 
 def _log(message: str) -> None:
@@ -347,3 +348,117 @@ class HYBS_LoadImagePromptMetadata(io.ComfyNode):
         except Exception:
             mtime = 0
         return f"{image}:{mtime}"
+
+
+class HYBS_LoadImagePromptMetadataAdvance(io.ComfyNode):
+    """Load an image and return any number of prompt strings by node ID."""
+
+    @classmethod
+    def _parse_selection(cls, selection) -> list[str]:
+        if isinstance(selection, dict):
+            values = selection.get("selected", [])
+        elif isinstance(selection, str):
+            try:
+                values = json.loads(selection)
+            except json.JSONDecodeError:
+                values = []
+        else:
+            values = []
+
+        if not isinstance(values, list):
+            return []
+
+        return [_normalize_node_id(value) for value in values if _normalize_node_id(value)]
+
+    @classmethod
+    def define_schema(cls) -> io.Schema:
+        image_input_kwargs = {
+            "options": _image_options(),
+            "tooltip": "Image file from ComfyUI's input folder.",
+        }
+        if hasattr(io, "UploadType"):
+            image_input_kwargs["upload"] = io.UploadType.image
+        if hasattr(io, "FolderType"):
+            image_input_kwargs["image_folder"] = io.FolderType.input
+
+        return io.Schema(
+            node_id="HYBS_LoadImagePromptMetadataAdvance",
+            display_name="Load Image Prompt Metadata Advance",
+            category="HYBS/LoadImage",
+            search_aliases=["load image", "metadata", "workflow", "prompt", "node id", "advanced"],
+            essentials_category="Input/Image",
+            inputs=[
+                io.Combo.Input("image", **image_input_kwargs),
+                io.String.Input(
+                    "selection",
+                    default="[]",
+                    socketless=True,
+                    tooltip="Internal prompt node ID list managed by the frontend widget.",
+                ),
+            ],
+            outputs=[
+                io.Image.Output(display_name="IMAGE"),
+                *[
+                    io.String.Output(display_name=f"prompt_{index}")
+                    for index in range(1, ADVANCED_MAX_PROMPTS + 1)
+                ],
+            ],
+            description="Load an image and extract any number of prompt strings from embedded ComfyUI workflow metadata by node ID.",
+        )
+
+    @classmethod
+    def validate_inputs(cls, image: str, selection="[]", **kwargs) -> bool | str:
+        base_validation = HYBS_LoadImagePromptMetadata.validate_inputs(image=image)
+        if base_validation is not True:
+            return base_validation
+
+        if not cls._parse_selection(selection):
+            return "At least one prompt node ID is required."
+        if len(cls._parse_selection(selection)) > ADVANCED_MAX_PROMPTS:
+            return f"Prompt node IDs must be {ADVANCED_MAX_PROMPTS} or fewer."
+
+        return True
+
+    @classmethod
+    def execute(cls, image: str, selection="[]") -> io.NodeOutput:
+        node_ids = cls._parse_selection(selection)
+        if not node_ids:
+            raise ValueError("At least one prompt node ID is required.")
+        if len(node_ids) > ADVANCED_MAX_PROMPTS:
+            raise ValueError(f"Prompt node IDs must be {ADVANCED_MAX_PROMPTS} or fewer.")
+
+        image_path = _get_annotated_path(image)
+
+        try:
+            with node_helpers.pillow(Image.open, image_path) as img:
+                metadata = _extract_image_metadata(img)
+                workflow = _find_workflow(metadata)
+                prompt = _find_prompt(metadata)
+                output_image = _load_image_tensor(img)
+        except UnidentifiedImageError as exc:
+            raise ValueError(f"Could not load image: {image}") from exc
+
+        if workflow is None and prompt is None:
+            raise ValueError(f"No ComfyUI workflow or prompt metadata found in {image!r}")
+
+        prompts = []
+        missing = []
+        for node_id in node_ids:
+            prompt_text = _prompt_from_id(workflow, prompt, node_id)
+            if prompt_text:
+                prompts.append(prompt_text)
+            else:
+                missing.append(node_id)
+
+        if missing:
+            joined_missing = ", ".join(repr(node_id) for node_id in missing)
+            raise ValueError(f"Could not extract prompt text for node ID(s): {joined_missing}")
+
+        prompt_outputs = prompts[:ADVANCED_MAX_PROMPTS]
+        prompt_outputs.extend([""] * (ADVANCED_MAX_PROMPTS - len(prompt_outputs)))
+
+        return io.NodeOutput(output_image, *prompt_outputs)
+
+    @classmethod
+    def fingerprint_inputs(cls, image=None, **kwargs) -> str:
+        return HYBS_LoadImagePromptMetadata.fingerprint_inputs(image=image, **kwargs)
