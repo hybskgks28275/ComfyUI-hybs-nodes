@@ -1,12 +1,17 @@
 import { app } from "../../scripts/app.js";
 
-const CT_DIFFUSION_MODEL_LIST = "HYBS_DiffusionModelList";
-const EMPTY_OPTION = "none";
+const CT_LORA_LIST = "HYBS_LoRAList";
+const EMPTY_OPTION = "<select LoRA>";
+const NONE_OPTION = "NONE";
 const HIDDEN_WIDGET_SIZE = [0, -4];
 const COUNT_WIDGET_NAME = "selected count";
 
-function isModelWidget(widget) {
-  return typeof widget?.name === "string" && widget.name.startsWith("model_");
+function isLoRAWidget(widget) {
+  return typeof widget?.name === "string" && widget.name.startsWith("lora_");
+}
+
+function isEntryWidget(widget) {
+  return isLoRAWidget(widget);
 }
 
 function findWidget(node, name) {
@@ -22,8 +27,8 @@ function hideWidget(widget) {
   widget.computeSize = () => HIDDEN_WIDGET_SIZE;
 }
 
-function findModelWidgets(node) {
-  return node.widgets?.filter(isModelWidget) || [];
+function findEntryWidgets(node) {
+  return node.widgets?.filter(isEntryWidget) || [];
 }
 
 function findCountWidget(node) {
@@ -129,64 +134,85 @@ function queueInitialCompact(node) {
   setTimeout(compact, 300);
 }
 
-function addModelWidget(node, selectionWidget, allOptions, value = EMPTY_OPTION) {
-  const index = findModelWidgets(node).length;
-  const widget = node.addWidget(
-    "combo",
-    `model_${index}`,
-    value,
-    () => refreshSelection(node, selectionWidget, allOptions),
-    { values: [EMPTY_OPTION, ...allOptions] },
-  );
+function removeEntryWidgets(node) {
+  let widgetIndex = 0;
+  while (widgetIndex < node.widgets.length) {
+    const widget = node.widgets[widgetIndex];
+    if (isEntryWidget(widget)) {
+      node.widgets.splice(widgetIndex, 1);
+      continue;
+    }
+    widgetIndex += 1;
+  }
+}
 
-  widget.label = `model ${index + 1}`;
-  widget.options.serialize = false;
-  return widget;
+function getEntries(node) {
+  const entries = [];
+  for (const widget of node.widgets || []) {
+    if (!isLoRAWidget(widget)) {
+      continue;
+    }
+
+    const index = Number(widget.name.slice("lora_".length));
+    const name = String(widget.value || "").trim();
+    entries.push({ index, name });
+  }
+
+  return entries.sort((a, b) => a.index - b.index);
+}
+
+function serializeEntries(entries) {
+  return JSON.stringify(
+    entries
+      .filter((entry) => entry.name && entry.name !== EMPTY_OPTION)
+      .map((entry) => (entry.name === NONE_OPTION ? null : entry.name)),
+  );
+}
+
+function addEntryWidgets(node, selectionWidget, allOptions, entry = {}, index = 0) {
+  const name = entry.name || EMPTY_OPTION;
+  const values = index === 0
+    ? [EMPTY_OPTION, NONE_OPTION, ...allOptions]
+    : [EMPTY_OPTION, ...allOptions];
+
+  const loraWidget = node.addWidget(
+    "combo",
+    `lora_${index}`,
+    name,
+    () => refreshSelection(node, selectionWidget, allOptions),
+    { values },
+  );
+  loraWidget.label = `lora ${index + 1}`;
+  loraWidget.options.serialize = false;
+  return loraWidget;
 }
 
 function refreshSelection(node, selectionWidget, allOptions) {
   const baseSize = Array.isArray(node.size) ? [node.size[0], node.size[1]] : null;
-  const selected = [];
-  let widgetIndex = 0;
-  let comboIndex = 0;
+  const entries = getEntries(node)
+    .filter((entry, index) => {
+      if (!entry.name || entry.name === EMPTY_OPTION) {
+        return false;
+      }
+      return entry.name !== NONE_OPTION || index === 0;
+    })
+    .map((entry, index) => ({
+      name: entry.name,
+    }));
 
-  while (widgetIndex < node.widgets.length) {
-    const widget = node.widgets[widgetIndex];
-    if (!isModelWidget(widget)) {
-      widgetIndex += 1;
-      continue;
-    }
+  removeEntryWidgets(node);
+  entries.forEach((entry, index) => addEntryWidgets(node, selectionWidget, allOptions, entry, index));
+  addEntryWidgets(node, selectionWidget, allOptions, {}, entries.length);
 
-    if (widget.value === EMPTY_OPTION) {
-      node.widgets.splice(widgetIndex, 1);
-      continue;
-    }
-
-    widget.name = `model_${comboIndex}`;
-    widget.label = `model ${comboIndex + 1}`;
-    selected.push(widget.value);
-    widgetIndex += 1;
-    comboIndex += 1;
-  }
-
-  addModelWidget(node, selectionWidget, allOptions, EMPTY_OPTION);
-  selectionWidget.value = JSON.stringify(selected);
-  setCountWidget(node, selected.length);
+  selectionWidget.value = serializeEntries(entries);
+  setCountWidget(node, entries.length);
   applyNodeSize(node, "preserve", baseSize);
   app.graph?.setDirtyCanvas?.(true, true);
 }
 
 function refreshFromSelection(node, selectionWidget, allOptions, mode = "preserve") {
   const baseSize = Array.isArray(node.size) ? [node.size[0], node.size[1]] : null;
-  let widgetIndex = 0;
-  while (widgetIndex < node.widgets.length) {
-    const widget = node.widgets[widgetIndex];
-    if (isModelWidget(widget)) {
-      node.widgets.splice(widgetIndex, 1);
-      continue;
-    }
-    widgetIndex += 1;
-  }
+  removeEntryWidgets(node);
 
   let selected = [];
   try {
@@ -199,24 +225,43 @@ function refreshFromSelection(node, selectionWidget, allOptions, mode = "preserv
     selected = [];
   }
 
-  for (const value of selected) {
-    addModelWidget(node, selectionWidget, allOptions, value);
-  }
+  selected
+    .map((entry) => {
+      if (entry === null) {
+        return { name: NONE_OPTION };
+      }
+      if (typeof entry === "string") {
+        return { name: entry };
+      }
+      if (entry && typeof entry === "object") {
+        return { name: entry.name };
+      }
+      return null;
+    })
+    .filter((entry) => entry && typeof entry === "object")
+    .forEach((entry, index) => {
+      const name = String(entry.name || "").trim();
+      if (!name || (name === NONE_OPTION && index !== 0)) {
+        return;
+      }
+      addEntryWidgets(node, selectionWidget, allOptions, { name }, index);
+    });
 
-  addModelWidget(node, selectionWidget, allOptions, EMPTY_OPTION);
-  selectionWidget.value = JSON.stringify(selected);
-  setCountWidget(node, selected.length);
+  addEntryWidgets(node, selectionWidget, allOptions, {}, getEntries(node).length);
+  selectionWidget.value = serializeEntries(getEntries(node));
+  setCountWidget(node, JSON.parse(selectionWidget.value || "[]").length);
   applyNodeSize(node, mode, baseSize);
   app.graph?.setDirtyCanvas?.(true, true);
 }
 
 app.registerExtension({
-  name: "HYBS.DiffusionModelList",
+  name: "HYBS.LoRAList",
 
   async beforeRegisterNodeDef(nodeType, nodeData) {
-    if (nodeData?.name !== CT_DIFFUSION_MODEL_LIST) {
+    if (nodeData?.name !== CT_LORA_LIST) {
       return;
     }
+
     const allOptions =
       nodeData?.input?.required?.selection?.[1]?.all ||
       nodeData?.input?.optional?.selection?.[1]?.all ||

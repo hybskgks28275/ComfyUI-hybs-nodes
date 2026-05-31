@@ -69,6 +69,24 @@ ComfyUI 向けのカスタムノード集です。解像度ユーティリティ
   - LoRA 適用後の `model`/`clip` を下流へ接続してください。
   - Text Encode は LoRA 適用後に実行してください。
 
+### Load LoRA
+
+- カテゴリ: `HYBS/LoRA`
+- 入力:
+  - `model` (MODEL)
+  - `clip` (CLIP)
+  - `lora_name` (COMBO, 初期値 `NONE`)
+  - `strength_model` (FLOAT, 初期値 `1.0`)
+  - `strength_clip` (FLOAT, 初期値 `1.0`)
+- 出力:
+  - `model` (MODEL)
+  - `clip` (CLIP)
+  - `applied lora` (STRING)
+- 動作:
+  - `models/loras` フォルダの内容をプルダウンで選択します。
+  - `NONE` が初期値で、LoRA 未適用を意味します。
+  - `null`、空値、`NONE` の場合は入力 `model` / `clip` をそのまま返します。
+
 ### Diffusion Model List
 
 - カテゴリ: `HYBS/Model`
@@ -84,6 +102,34 @@ ComfyUI 向けのカスタムノード集です。解像度ユーティリティ
   - `count` は実際にモデル名が選択された項目だけを数えます。
   - `model names` は表示されているプルダウン順のまま返します。
   - ComfyLab の `XY Plot` では、ラベル用途に `model names` を使い、必要に応じて標準の diffusion model ノードと組み合わせてください。
+
+### LoRA List
+
+- カテゴリ: `HYBS/LoRA`
+- 入力:
+  - `lora 1`, `lora 2`, ... (COMBO, 自動追加)
+- 出力:
+  - `lora names` (LIST)
+  - `count` (INT)
+- 動作:
+  - `models/loras` フォルダの内容をプルダウンで選択します。
+  - 最初は 1 つだけ表示され、LoRA を選ぶごとに次の選択欄が追加されます。
+  - `NONE` は 1 行目だけ選択可能です。未適用の baseline を比較に含めたい場合に使えます。
+  - 初期値は `null` です。`NONE` を選ぶと `null` として返します。
+  - LoRA ファイル名を表示行の順番で返します。
+
+### Double List
+
+- カテゴリ: `HYBS/List`
+- 入力:
+  - `value 1`, `value 2`, ... (FLOAT, 手動追加/削除)
+- 出力:
+  - `double list` (LIST)
+  - `count` (INT)
+- 動作:
+  - 編集可能な小数値を list で返します。
+  - 初期値は 1 つで、`1.0` です。
+  - `LoRA List` と組み合わせて LoRA strength list を別ノードとして扱う場合などに使えます。
 
 ### Load Image Prompt Metadata
 
