@@ -71,6 +71,24 @@ Custom nodes for ComfyUI, including resolution utilities, conditional LoRA loadi
   - Use LoRA-applied `model`/`clip` outputs downstream.
   - Text encoding must happen after LoRA application.
 
+### Load LoRA
+
+- Category: `HYBS/LoRA`
+- Inputs:
+  - `model` (MODEL)
+  - `clip` (CLIP)
+  - `lora_name` (COMBO, default `NONE`)
+  - `strength_model` (FLOAT, default `1.0`)
+  - `strength_clip` (FLOAT, default `1.0`)
+- Outputs:
+  - `model` (MODEL)
+  - `clip` (CLIP)
+  - `applied lora` (STRING)
+- Behavior:
+  - Uses a dropdown populated from the `models/loras` folder.
+  - `NONE` is the default and means no LoRA is applied.
+  - `null`, an empty value, or `NONE` passes the input `model`/`clip` through unchanged.
+
 ### Diffusion Model List
 
 - Category: `HYBS/Model`
@@ -86,6 +104,34 @@ Custom nodes for ComfyUI, including resolution utilities, conditional LoRA loadi
   - `count` increases only for dropdowns with an actual model selected.
   - `model names` keeps the same order as the visible dropdowns.
   - For ComfyLab `XY Plot`, use `model names` as the label source and pair it with a standard ComfyUI diffusion model node as needed.
+
+### LoRA List
+
+- Category: `HYBS/LoRA`
+- Inputs:
+  - `lora 1`, `lora 2`, ... (COMBO, auto-growing)
+- Outputs:
+  - `lora names` (LIST)
+  - `count` (INT)
+- Behavior:
+  - Uses dropdowns populated from the `models/loras` folder.
+  - Starts with one LoRA dropdown and adds another as LoRAs are selected.
+  - Only the first row can select `NONE`, so you can include an unapplied baseline in comparisons.
+  - The initial value is `null`; selecting `NONE` is returned as `null`.
+  - Returns LoRA filenames in visible row order.
+
+### Double List
+
+- Category: `HYBS/List`
+- Inputs:
+  - `value 1`, `value 2`, ... (FLOAT, manually add/remove)
+- Outputs:
+  - `double list` (LIST)
+  - `count` (INT)
+- Behavior:
+  - Returns editable floating-point values as a list.
+  - Starts with one value, `1.0`.
+  - Use it as a separate strength list when pairing strengths with `LoRA List`, such as LoRA comparison workflows.
 
 ### Load Image Prompt Metadata
 
