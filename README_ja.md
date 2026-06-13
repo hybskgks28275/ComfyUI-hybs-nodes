@@ -45,6 +45,8 @@ ComfyUI 向けのカスタムノード集です。解像度ユーティリティ
   - `count` (INT)
 - 動作:
   - `count` 個の 32bit 乱数シードを生成します。
+  - 生成されたリスト内で seed 値は重複しません。
+  - キュー実行ごとに再実行され、新しいリストを生成します。
 
 ### Conditional LoRA Loader
 
@@ -130,6 +132,18 @@ ComfyUI 向けのカスタムノード集です。解像度ユーティリティ
   - 編集可能な小数値を list で返します。
   - 初期値は 1 つで、`1.0` です。
   - `LoRA List` と組み合わせて LoRA strength list を別ノードとして扱う場合などに使えます。
+
+### Int List
+
+- カテゴリ: `HYBS/List`
+- 入力:
+  - `value 1`, `value 2`, ... (INT, 手動追加/削除)
+- 出力:
+  - `int list` (LIST)
+  - `count` (INT)
+- 動作:
+  - 編集可能な整数値を list で返します。
+  - 初期値は 1 つで、`1` です。
 
 ### Load Image Prompt Metadata
 
