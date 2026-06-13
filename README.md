@@ -47,6 +47,8 @@ Custom nodes for ComfyUI, including resolution utilities, conditional LoRA loadi
   - `count` (INT)
 - Behavior:
   - Generates `count` random 32-bit seed values.
+  - Values are unique within each generated list.
+  - Re-executes on each queue run so a fresh list is generated.
 
 ### Conditional LoRA Loader
 
@@ -132,6 +134,18 @@ Custom nodes for ComfyUI, including resolution utilities, conditional LoRA loadi
   - Returns editable floating-point values as a list.
   - Starts with one value, `1.0`.
   - Use it as a separate strength list when pairing strengths with `LoRA List`, such as LoRA comparison workflows.
+
+### Int List
+
+- Category: `HYBS/List`
+- Inputs:
+  - `value 1`, `value 2`, ... (INT, manually add/remove)
+- Outputs:
+  - `int list` (LIST)
+  - `count` (INT)
+- Behavior:
+  - Returns editable integer values as a list.
+  - Starts with one value, `1`.
 
 ### Load Image Prompt Metadata
 

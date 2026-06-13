@@ -15,6 +15,7 @@ from .nodes.hybs_load_lora import HYBS_LoadLoRA
 from .nodes.hybs_diffusion_model_list import HYBS_DiffusionModelList
 from .nodes.hybs_lora_list import HYBS_LoRAList
 from .nodes.hybs_double_list import HYBS_DoubleList
+from .nodes.hybs_int_list import HYBS_IntList
 from .nodes.hybs_load_image_prompt_metadata import (
     HYBS_LoadImagePromptMetadata,
     HYBS_LoadImagePromptMetadataAdvance,
@@ -38,6 +39,7 @@ class HybsNodesExtension(ComfyExtension):
             HYBS_DiffusionModelList,
             HYBS_LoRAList,
             HYBS_DoubleList,
+            HYBS_IntList,
             HYBS_LoadImagePromptMetadata,
             HYBS_LoadImagePromptMetadataAdvance,
             HYBS_GroupBypasser_Parent,

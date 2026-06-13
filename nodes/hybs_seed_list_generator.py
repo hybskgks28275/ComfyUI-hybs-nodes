@@ -1,8 +1,11 @@
 """Seed list generator node."""
 
 import random
-from typing import List
+import uuid
+
 from ..hybs_comfy_api import io
+
+MAX_SEED = 2**32 - 1
 
 
 class HYBS_SeedListGenerator(io.ComfyNode):
@@ -17,7 +20,7 @@ class HYBS_SeedListGenerator(io.ComfyNode):
             search_aliases=["seed", "random seed list", "batch seeds"],
             essentials_category="Utilities/Seed",
             inputs=[
-                io.Int.Input("count", default=1, min=1, max=0xffffffffffffffff),
+                io.Int.Input("count", default=1, min=1, max=MAX_SEED + 1),
             ],
             outputs=[
                 io.Custom("LIST").Output(display_name="seed list"),
@@ -28,5 +31,10 @@ class HYBS_SeedListGenerator(io.ComfyNode):
 
     @classmethod
     def execute(cls, count: int) -> io.NodeOutput:
-        seeds: List[int] = [random.randint(0, 2**32 - 1) for _ in range(count)]
+        count = int(count)
+        seeds = random.sample(range(MAX_SEED + 1), count)
         return io.NodeOutput(seeds, count)
+
+    @classmethod
+    def fingerprint_inputs(cls, **kwargs) -> str:
+        return uuid.uuid4().hex
