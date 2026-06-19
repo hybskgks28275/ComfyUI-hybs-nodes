@@ -117,8 +117,9 @@ Custom nodes for ComfyUI, including resolution utilities, conditional LoRA loadi
   - `count` (INT)
 - Behavior:
   - Uses dropdowns populated from the `models/loras` folder.
-  - Starts with one LoRA dropdown and adds another as LoRAs are selected.
-  - Only the first row can select `NONE`, so you can include an unapplied baseline in comparisons.
+  - Starts with one LoRA dropdown and adds rows with the `add lora` button.
+  - `NONE` in the first row is kept as an unapplied baseline for comparisons.
+  - Selecting `NONE` on the second or later row removes that row.
   - The initial value is `null`; selecting `NONE` is returned as `null`.
   - Returns LoRA filenames in visible row order.
 
