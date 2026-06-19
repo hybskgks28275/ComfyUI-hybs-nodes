@@ -1,10 +1,11 @@
 import { app } from "../../scripts/app.js";
 
 const CT_LORA_LIST = "HYBS_LoRAList";
-const EMPTY_OPTION = "<select LoRA>";
+const LEGACY_EMPTY_OPTION = "<select LoRA>";
 const NONE_OPTION = "NONE";
 const HIDDEN_WIDGET_SIZE = [0, -4];
 const COUNT_WIDGET_NAME = "selected count";
+const ADD_BUTTON_NAME = "add lora";
 
 function isLoRAWidget(widget) {
   return typeof widget?.name === "string" && widget.name.startsWith("lora_");
@@ -12,6 +13,10 @@ function isLoRAWidget(widget) {
 
 function isEntryWidget(widget) {
   return isLoRAWidget(widget);
+}
+
+function isAddButtonWidget(widget) {
+  return widget?.name === ADD_BUTTON_NAME;
 }
 
 function findWidget(node, name) {
@@ -33,6 +38,10 @@ function findEntryWidgets(node) {
 
 function findCountWidget(node) {
   return findWidget(node, COUNT_WIDGET_NAME);
+}
+
+function isEmptyOption(value) {
+  return value === LEGACY_EMPTY_OPTION;
 }
 
 function ensureCountWidget(node) {
@@ -146,6 +155,18 @@ function removeEntryWidgets(node) {
   }
 }
 
+function removeAddButton(node) {
+  let widgetIndex = 0;
+  while (widgetIndex < node.widgets.length) {
+    const widget = node.widgets[widgetIndex];
+    if (isAddButtonWidget(widget)) {
+      node.widgets.splice(widgetIndex, 1);
+      continue;
+    }
+    widgetIndex += 1;
+  }
+}
+
 function getEntries(node) {
   const entries = [];
   for (const widget of node.widgets || []) {
@@ -164,16 +185,14 @@ function getEntries(node) {
 function serializeEntries(entries) {
   return JSON.stringify(
     entries
-      .filter((entry) => entry.name && entry.name !== EMPTY_OPTION)
+      .filter((entry) => entry.name && !isEmptyOption(entry.name))
       .map((entry) => (entry.name === NONE_OPTION ? null : entry.name)),
   );
 }
 
 function addEntryWidgets(node, selectionWidget, allOptions, entry = {}, index = 0) {
-  const name = entry.name || EMPTY_OPTION;
-  const values = index === 0
-    ? [EMPTY_OPTION, NONE_OPTION, ...allOptions]
-    : [EMPTY_OPTION, ...allOptions];
+  const name = entry.name || NONE_OPTION;
+  const values = [NONE_OPTION, ...allOptions];
 
   const loraWidget = node.addWidget(
     "combo",
@@ -187,11 +206,33 @@ function addEntryWidgets(node, selectionWidget, allOptions, entry = {}, index = 
   return loraWidget;
 }
 
+function hasPendingDeleteRow(node) {
+  return getEntries(node).some((entry) => entry.index > 0 && entry.name === NONE_OPTION);
+}
+
+function addAddButton(node, selectionWidget, allOptions) {
+  removeAddButton(node);
+  const addButton = node.addWidget("button", ADD_BUTTON_NAME, "add", () => {
+    if (hasPendingDeleteRow(node)) {
+      return;
+    }
+
+    const baseSize = Array.isArray(node.size) ? [node.size[0], node.size[1]] : null;
+    removeAddButton(node);
+    addEntryWidgets(node, selectionWidget, allOptions, { name: NONE_OPTION }, getEntries(node).length);
+    addAddButton(node, selectionWidget, allOptions);
+    applyNodeSize(node, "preserve", baseSize);
+    app.graph?.setDirtyCanvas?.(true, true);
+  });
+  addButton.options = addButton.options || {};
+  addButton.options.serialize = false;
+}
+
 function refreshSelection(node, selectionWidget, allOptions) {
   const baseSize = Array.isArray(node.size) ? [node.size[0], node.size[1]] : null;
   const entries = getEntries(node)
     .filter((entry, index) => {
-      if (!entry.name || entry.name === EMPTY_OPTION) {
+      if (!entry.name || isEmptyOption(entry.name)) {
         return false;
       }
       return entry.name !== NONE_OPTION || index === 0;
@@ -201,11 +242,16 @@ function refreshSelection(node, selectionWidget, allOptions) {
     }));
 
   removeEntryWidgets(node);
+  removeAddButton(node);
   entries.forEach((entry, index) => addEntryWidgets(node, selectionWidget, allOptions, entry, index));
-  addEntryWidgets(node, selectionWidget, allOptions, {}, entries.length);
+  if (entries.length === 0) {
+    addEntryWidgets(node, selectionWidget, allOptions, { name: NONE_OPTION }, 0);
+  }
+  addAddButton(node, selectionWidget, allOptions);
 
-  selectionWidget.value = serializeEntries(entries);
-  setCountWidget(node, entries.length);
+  const serializedEntries = entries.length === 0 ? [{ name: NONE_OPTION }] : entries;
+  selectionWidget.value = serializeEntries(serializedEntries);
+  setCountWidget(node, serializedEntries.length);
   applyNodeSize(node, "preserve", baseSize);
   app.graph?.setDirtyCanvas?.(true, true);
 }
@@ -213,6 +259,7 @@ function refreshSelection(node, selectionWidget, allOptions) {
 function refreshFromSelection(node, selectionWidget, allOptions, mode = "preserve") {
   const baseSize = Array.isArray(node.size) ? [node.size[0], node.size[1]] : null;
   removeEntryWidgets(node);
+  removeAddButton(node);
 
   let selected = [];
   try {
@@ -225,6 +272,7 @@ function refreshFromSelection(node, selectionWidget, allOptions, mode = "preserv
     selected = [];
   }
 
+  const restoredEntries = [];
   selected
     .map((entry) => {
       if (entry === null) {
@@ -245,11 +293,16 @@ function refreshFromSelection(node, selectionWidget, allOptions, mode = "preserv
         return;
       }
       addEntryWidgets(node, selectionWidget, allOptions, { name }, index);
+      restoredEntries.push({ name });
     });
 
-  addEntryWidgets(node, selectionWidget, allOptions, {}, getEntries(node).length);
-  selectionWidget.value = serializeEntries(getEntries(node));
-  setCountWidget(node, JSON.parse(selectionWidget.value || "[]").length);
+  if (restoredEntries.length === 0) {
+    addEntryWidgets(node, selectionWidget, allOptions, { name: NONE_OPTION }, 0);
+    restoredEntries.push({ name: NONE_OPTION });
+  }
+  addAddButton(node, selectionWidget, allOptions);
+  selectionWidget.value = serializeEntries(restoredEntries);
+  setCountWidget(node, restoredEntries.length);
   applyNodeSize(node, mode, baseSize);
   app.graph?.setDirtyCanvas?.(true, true);
 }
