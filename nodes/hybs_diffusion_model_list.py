@@ -57,10 +57,10 @@ class HYBS_DiffusionModelList(io.ComfyNode):
                 ),
             ],
             outputs=[
-                io.Custom("LIST").Output(display_name="model names"),
-                io.Int.Output(display_name="count"),
+                io.Custom("LIST").Output(display_name="model names", tooltip="Selected UNet/diffusion model filenames."),
+                io.Int.Output(display_name="count", tooltip="Number of selected models."),
             ],
-            description="Return selected UNet diffusion model names as a list.",
+            description="Return selected UNet diffusion model filenames as a list.",
         )
 
     @classmethod

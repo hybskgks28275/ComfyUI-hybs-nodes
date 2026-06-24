@@ -18,9 +18,9 @@ class HYBS_GroupBypasser_Parent(io.ComfyNode):
             essentials_category="Workflow/Control",
             inputs=[],
             outputs=[
-                _ANY.Output(display_name="to_children"),
+                _ANY.Output(display_name="to_children", tooltip="UI-only link to Group Bypass Child from_parent."),
             ],
-            description="Frontend-only marker node for cascade bypass. Backend no-op.",
+            description="Frontend-only cascade source marker. Backend no-op.",
         )
 
     @classmethod
@@ -41,12 +41,12 @@ class HYBS_GroupBypasser_Child(io.ComfyNode):
             search_aliases=["group bypass child", "cascade child", "group marker child"],
             essentials_category="Workflow/Control",
             inputs=[
-                _ANY.Input("from_parent", tooltip="UI only. Link marker."),
+                _ANY.Input("from_parent", tooltip="UI-only link from a Group Bypass Parent or another Child."),
             ],
             outputs=[
-                _ANY.Output(display_name="to_children"),
+                _ANY.Output(display_name="to_children", tooltip="UI-only link to the next Group Bypass Child."),
             ],
-            description="Frontend-controlled marker. Backend is pass-through.",
+            description="Frontend-controlled cascade target marker. Backend passes through its input.",
         )
 
     @classmethod
@@ -67,7 +67,7 @@ class HYBS_GroupBypasser_Panel(io.ComfyNode):
             essentials_category="Workflow/Control",
             inputs=[],
             outputs=[],
-            description="Frontend-only panel. Backend no-op.",
+            description="Frontend-only panel for controlling group bypass states. Backend no-op.",
         )
 
     @classmethod

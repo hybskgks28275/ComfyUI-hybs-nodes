@@ -87,13 +87,13 @@ class HYBS_LoadLoRA(io.ComfyNode):
             search_aliases=["load lora", "lora loader", "hybs lora loader"],
             essentials_category="Loaders/LoRA",
             inputs=[
-                _Model.Input("model"),
-                _CLIP.Input("clip"),
+                _Model.Input("model", tooltip="MODEL to receive the LoRA."),
+                _CLIP.Input("clip", tooltip="CLIP to receive the LoRA."),
                 io.Combo.Input(
                     "lora_name",
                     options=_lora_options(),
                     default=NONE_OPTION,
-                    tooltip="LoRA filename. NONE means no LoRA is applied.",
+                    tooltip="LoRA filename. NONE leaves the input model and CLIP unchanged.",
                 ),
                 io.Float.Input(
                     "strength_model",
@@ -113,11 +113,11 @@ class HYBS_LoadLoRA(io.ComfyNode):
                 ),
             ],
             outputs=[
-                _Model.Output(display_name="model"),
-                _CLIP.Output(display_name="clip"),
-                io.String.Output(display_name="applied lora"),
+                _Model.Output(display_name="model", tooltip="MODEL after the LoRA is applied."),
+                _CLIP.Output(display_name="clip", tooltip="CLIP after the LoRA is applied."),
+                io.String.Output(display_name="applied lora", tooltip="Applied LoRA token, or an empty string for NONE."),
             ],
-            description="Apply the selected LoRA. NONE/null returns the input model and clip unchanged.",
+            description="Apply the selected LoRA. NONE/null returns the input model and CLIP unchanged.",
         )
 
     @classmethod
