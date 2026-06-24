@@ -7,7 +7,8 @@ Guidance for automated coding agents working in this repository.
 - This is a ComfyUI custom node package.
 - Python backend nodes live in `nodes/`.
 - Shared Python helpers live at the repository root, such as `hybs_comfy_api.py` and `hybs_resolution_common.py`.
-- Frontend extensions live in `web/js/`.
+- The extension web root is `web/`; frontend extensions live in `web/js/`.
+- Node documentation lives in `web/docs/`.
 - Example configuration files live in `config/`.
 - Example workflows live in `workflow/`.
 
@@ -17,7 +18,20 @@ Guidance for automated coding agents working in this repository.
 - Prefer the ComfyUI V3 schema APIs already used in this repository.
 - Preserve compatibility fallbacks around ComfyUI imports unless the task explicitly removes them.
 - Do not commit user-local config files; update `*.example` files when documenting new config options.
-- If adding a node, register it through the package entrypoint and document it in both `README.md` and `README_ja.md` when user-facing.
+- If adding a node, register it through the package entrypoint and add English and Japanese node documentation.
+
+## Node Documentation
+
+- Keep node schema `description` and `tooltip` text in English.
+- Add localized Markdown files for every user-facing node:
+  - `web/docs/<node_id>/en.md`
+  - `web/docs/<node_id>/ja.md`
+- Use the V3 schema `node_id` as `<node_id>` in documentation paths.
+- Add new nodes to both documentation indexes:
+  - `web/docs/index/en.md`
+  - `web/docs/index/ja.md`
+- Keep `README.md` and `README_ja.md` concise. They should link to the matching documentation index instead of duplicating node usage or configuration details.
+- Document configuration files in the relevant node documentation, not in the READMEs.
 
 ## Validation
 

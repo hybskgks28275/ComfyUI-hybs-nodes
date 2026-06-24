@@ -113,21 +113,20 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
                     multiline=True,
                     default="",
                     force_input=True,
-                    tooltip="Positive prompt to be matched against regex patterns."
+                    tooltip="Positive prompt matched against TOML trigger regular expressions."
                 ),
                 io.Combo.Input(
                     "config_toml",
                     options=tomls,
-                    tooltip="TOML filename under config/ with [[lora]] entries."
+                    tooltip="TOML file under config/ that contains [[lora]] entries."
                 ),
             ],
             outputs=[
-                _Model.Output(display_name="model"),
-                _CLIP.Output(display_name="clip"),
-                io.String.Output(display_name="applied loras"),
+                _Model.Output(display_name="model", tooltip="MODEL with all matching LoRAs applied."),
+                _CLIP.Output(display_name="clip", tooltip="CLIP with all matching LoRAs applied."),
+                io.String.Output(display_name="applied loras", tooltip="Space-separated tokens for the applied LoRAs."),
             ],
-            description='Conditionally apply LoRAs based on regex matches in the positive. '
-                        'Outputs tokens like <lora:"name":m:c> (space-separated).'
+            description="Conditionally apply LoRAs whose TOML trigger regex matches the positive prompt.",
         )
 
     @staticmethod

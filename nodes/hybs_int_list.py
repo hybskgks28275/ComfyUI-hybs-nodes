@@ -56,8 +56,8 @@ class HYBS_IntList(io.ComfyNode):
                 ),
             ],
             outputs=[
-                io.Custom("LIST").Output(display_name="int list"),
-                io.Int.Output(display_name="count"),
+                io.Custom("LIST").Output(display_name="int list", tooltip="Editable integer values."),
+                io.Int.Output(display_name="count", tooltip="Number of list entries."),
             ],
             description="Return editable integer values as a list.",
         )

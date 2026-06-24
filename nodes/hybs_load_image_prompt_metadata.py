@@ -267,7 +267,7 @@ class HYBS_LoadImagePromptMetadata(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         image_input_kwargs = {
             "options": _image_options(),
-            "tooltip": "Image file from ComfyUI's input folder.",
+            "tooltip": "Image from ComfyUI's input folder that contains workflow or prompt metadata.",
         }
         if hasattr(io, "UploadType"):
             image_input_kwargs["upload"] = io.UploadType.image
@@ -285,18 +285,18 @@ class HYBS_LoadImagePromptMetadata(io.ComfyNode):
                 io.String.Input(
                     "positive_node_id",
                     default="",
-                    tooltip="Node ID to read as the positive prompt. Subgraph IDs like 82:78 are also supported.",
+                    tooltip="Node ID to read as the positive prompt. Subgraph IDs such as 82:78 are supported.",
                 ),
                 io.String.Input(
                     "negative_node_id",
                     default="",
-                    tooltip="Node ID to read as the negative prompt. Subgraph IDs like 82:78 are also supported.",
+                    tooltip="Node ID to read as the negative prompt. Subgraph IDs such as 82:78 are supported.",
                 ),
             ],
             outputs=[
-                io.Image.Output(display_name="IMAGE"),
-                io.String.Output(display_name="positive"),
-                io.String.Output(display_name="negative"),
+                io.Image.Output(display_name="IMAGE", tooltip="Loaded image."),
+                io.String.Output(display_name="positive", tooltip="Prompt text read from positive_node_id."),
+                io.String.Output(display_name="negative", tooltip="Prompt text read from negative_node_id."),
             ],
             description="Load an image and extract positive/negative prompts from embedded ComfyUI workflow metadata by node ID.",
         )
@@ -374,7 +374,7 @@ class HYBS_LoadImagePromptMetadataAdvance(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         image_input_kwargs = {
             "options": _image_options(),
-            "tooltip": "Image file from ComfyUI's input folder.",
+            "tooltip": "Image from ComfyUI's input folder that contains workflow or prompt metadata.",
         }
         if hasattr(io, "UploadType"):
             image_input_kwargs["upload"] = io.UploadType.image
@@ -397,9 +397,9 @@ class HYBS_LoadImagePromptMetadataAdvance(io.ComfyNode):
                 ),
             ],
             outputs=[
-                io.Image.Output(display_name="IMAGE"),
+                io.Image.Output(display_name="IMAGE", tooltip="Loaded image."),
                 *[
-                    io.String.Output(display_name=f"prompt_{index}")
+                    io.String.Output(display_name=f"prompt_{index}", tooltip=f"Prompt text read from node ID {index}.")
                     for index in range(1, ADVANCED_MAX_PROMPTS + 1)
                 ],
             ],

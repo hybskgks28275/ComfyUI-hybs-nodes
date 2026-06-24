@@ -52,12 +52,12 @@ class HYBS_DoubleList(io.ComfyNode):
                     "selection",
                     default="[1.0]",
                     socketless=True,
-                    tooltip="Internal double list state managed by the frontend widget.",
+                    tooltip="Internal floating-point list state managed by the frontend widget.",
                 ),
             ],
             outputs=[
-                io.Custom("LIST").Output(display_name="double list"),
-                io.Int.Output(display_name="count"),
+                io.Custom("LIST").Output(display_name="double list", tooltip="Editable floating-point values."),
+                io.Int.Output(display_name="count", tooltip="Number of list entries."),
             ],
             description="Return editable floating-point values as a list.",
         )

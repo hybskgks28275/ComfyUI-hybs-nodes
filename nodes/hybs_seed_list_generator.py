@@ -20,13 +20,13 @@ class HYBS_SeedListGenerator(io.ComfyNode):
             search_aliases=["seed", "random seed list", "batch seeds"],
             essentials_category="Utilities/Seed",
             inputs=[
-                io.Int.Input("count", default=1, min=1, max=MAX_SEED + 1),
+                io.Int.Input("count", default=1, min=1, max=MAX_SEED + 1, tooltip="Number of unique seed values to generate."),
             ],
             outputs=[
-                io.Custom("LIST").Output(display_name="seed list"),
-                io.Int.Output(display_name="count"),
+                io.Custom("LIST").Output(display_name="seed list", tooltip="Randomly generated 32-bit seed values."),
+                io.Int.Output(display_name="count", tooltip="Number of generated seeds."),
             ],
-            description="Generate a list of random seed values."
+            description="Generate a unique list of random 32-bit seed values for each queue run.",
         )
 
     @classmethod

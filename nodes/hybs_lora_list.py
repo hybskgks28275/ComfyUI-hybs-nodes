@@ -72,8 +72,8 @@ class HYBS_LoRAList(io.ComfyNode):
                 ),
             ],
             outputs=[
-                io.Custom("LIST").Output(display_name="lora names"),
-                io.Int.Output(display_name="count"),
+                io.Custom("LIST").Output(display_name="lora names", tooltip="Selected LoRA filenames. The first NONE entry is output as null."),
+                io.Int.Output(display_name="count", tooltip="Number of list entries, including the NONE baseline."),
             ],
             description="Return selected LoRA filenames as a list. The first row may be NONE/null.",
         )

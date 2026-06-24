@@ -15,9 +15,9 @@ class HYBS_RandomResolutionSelector(io.ComfyNode):
             category="HYBS/ResolutionSelector",
             search_aliases=["random resolution", "size by seed", "deterministic size"],
             essentials_category="Utilities/Resolution",
-            inputs=[io.Int.Input("seed", default=0, min=0, tooltip="Deterministic pick: index = seed % len(combos)")],
-            outputs=[io.Int.Output(display_name="width"), io.Int.Output(display_name="height")],
-            description="Selects a (width, height) from a list based on seed. Reloads JSON on every execution."
+            inputs=[io.Int.Input("seed", default=0, min=0, tooltip="Deterministic pick: index = seed % len(combos).")],
+            outputs=[io.Int.Output(display_name="width", tooltip="Width of the selected resolution."), io.Int.Output(display_name="height", tooltip="Height of the selected resolution.")],
+            description="Select a resolution from the JSON list based on seed. Reloads the JSON on every execution.",
         )
 
     @classmethod

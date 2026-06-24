@@ -17,9 +17,9 @@ class HYBS_ResolutionSelector(io.ComfyNode):
             category="HYBS/ResolutionSelector",
             search_aliases=["resolution", "size", "width", "height"],
             essentials_category="Utilities/Resolution",
-            inputs=[io.Combo.Input("resolution", options=options)],
-            outputs=[io.Int.Output(display_name="width"), io.Int.Output(display_name="height")],
-            description="Select a resolution from predefined combos (loaded from JSON on startup)."
+            inputs=[io.Combo.Input("resolution", options=options, tooltip="Resolution pair loaded from config/resolution_combos.json.")],
+            outputs=[io.Int.Output(display_name="width", tooltip="Width of the selected resolution."), io.Int.Output(display_name="height", tooltip="Height of the selected resolution.")],
+            description="Select a resolution from predefined combos loaded from JSON on startup.",
         )
 
     @classmethod
