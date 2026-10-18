@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+import { app } from "../../../scripts/app.js";
 
 const BYPASS_MODE = 4;              // ComfyUI bypass
 const ENABLE_MODE = LiteGraph.ALWAYS;

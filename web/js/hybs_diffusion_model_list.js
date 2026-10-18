@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+import { app } from "../../../scripts/app.js";
 
 const CT_DIFFUSION_MODEL_LIST = "HYBS_DiffusionModelList";
 const EMPTY_OPTION = "none";

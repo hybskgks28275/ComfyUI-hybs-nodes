@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+import { app } from "../../../scripts/app.js";
 
 const CT_LORA_LIST = "HYBS_LoRAList";
 const LEGACY_EMPTY_OPTION = "<select LoRA>";

@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+import { app } from "../../../scripts/app.js";
 
 const CT_DOUBLE_LIST = "HYBS_DoubleList";
 const HIDDEN_WIDGET_SIZE = [0, -4];

@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+import { app } from "../../../scripts/app.js";
 
 const CT_ADVANCE = "HYBS_LoadImagePromptMetadataAdvance";
 const HIDDEN_WIDGET_SIZE = [0, -4];
