@@ -15,6 +15,7 @@ function markCanvasDirty() {
 function requestPanelSync(node, forceRebuild = false) {
   node._hybsNeedsSync = true;
   node._hybsRebuild?.(forceRebuild);
+  node._hybsSyncToggleState?.();
   markCanvasDirty();
 }
 
@@ -459,7 +460,10 @@ app.registerExtension({
 
           // remove dynamic toggles safely
           if (this.widgets && this.widgets.length > this._hybsStaticCount) {
-            this.widgets.splice(this._hybsStaticCount);
+            for (const widget of this.widgets.slice(this._hybsStaticCount)) {
+              if (typeof this.removeWidget === "function") this.removeWidget(widget);
+              else this.widgets.splice(this.widgets.indexOf(widget), 1);
+            }
           }
 
           // order entries
@@ -486,10 +490,16 @@ app.registerExtension({
 
             const w = this.addWidget("toggle", label, isGroupBypassed(e.group), (v) => {
               toggleGroupWithCascadeIfNeeded(e.graph, e.group, !!v);
-              // Force immediate UI rebind so cascade-target toggles reflect new state.
-              requestPanelSync(this, true);
+              // Update the existing widgets so Nodes 2.0 observes cascade changes.
+              for (const gr of getAllGraphs(app.graph)) {
+                for (const node of gr._nodes || []) {
+                  if (node.comfyClass === CT_PANEL) requestPanelSync(node);
+                }
+              }
             });
 
+            // Nodes 2.0 may restore the previous value when registering this name.
+            w.value = isGroupBypassed(e.group);
             w._hybsGraph = e.graph;
             w._hybsGroup = e.group;
           }
@@ -510,6 +520,15 @@ app.registerExtension({
           }
         };
 
+        this._hybsPoll = () => {
+          this._hybsRebuild(false);
+          this._hybsSyncToggleState();
+        };
+        this._hybsStartSync = () => {
+          clearInterval(this._hybsSyncTimer);
+          // Vue nodes do not rely on the LiteGraph foreground drawing hook.
+          this._hybsSyncTimer = setInterval(this._hybsPoll, PANEL_SYNC_INTERVAL_MS);
+        };
         this._hybsRebuild(true);
         // Workflow load timing can delay group availability. Rebuild again shortly after creation.
         const scheduleBootstrapRebuild = (delayMs) => {
@@ -523,6 +542,13 @@ app.registerExtension({
         scheduleBootstrapRebuild(200);
       };
 
+      const onAdded = nodeType.prototype.onAdded;
+      nodeType.prototype.onAdded = function () {
+        onAdded?.apply(this, arguments);
+        this._hybsStartSync?.();
+        requestPanelSync(this, true);
+      };
+
       const onConfigure = nodeType.prototype.onConfigure;
       nodeType.prototype.onConfigure = function () {
         onConfigure?.apply(this, arguments);
@@ -533,6 +559,8 @@ app.registerExtension({
 
       const onRemoved = nodeType.prototype.onRemoved;
       nodeType.prototype.onRemoved = function () {
+        clearInterval(this._hybsSyncTimer);
+        this._hybsSyncTimer = null;
         try { this._hybsCloseEditor?.(); } catch (_) {}
         onRemoved?.apply(this, arguments);
       };
