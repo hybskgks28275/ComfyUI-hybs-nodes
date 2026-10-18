@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+import { app } from "../../../scripts/app.js";
 
 const CT_INT_LIST = "HYBS_IntList";
 const HIDDEN_WIDGET_SIZE = [0, -4];
