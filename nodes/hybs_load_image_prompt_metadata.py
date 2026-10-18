@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 from typing import Any
 
@@ -15,6 +14,10 @@ import node_helpers
 import folder_paths
 
 from ..hybs_comfy_api import io
+from ..hybs_selection import selection_values
+from ..hybs_prompt_metadata import (
+    _find_workflow, _find_prompt, _prompt_from_id, _normalize_node_id,
+)
 
 LOG_PREFIX = '[HYBS]["Load Image Prompt Metadata"]'
 ADVANCED_MAX_PROMPTS = 20
@@ -52,180 +55,6 @@ def _extract_image_metadata(image: Image.Image) -> dict[str, Any]:
     return metadata
 
 
-def _decode_metadata_value(value: Any) -> str | None:
-    if value is None:
-        return None
-    if isinstance(value, str):
-        return value
-    if isinstance(value, bytes):
-        for encoding in ("utf-8", "utf-16", "latin-1"):
-            try:
-                return value.decode(encoding).strip("\x00")
-            except UnicodeDecodeError:
-                continue
-    return None
-
-
-def _coerce_json(value: Any) -> Any:
-    if isinstance(value, (dict, list)):
-        return value
-
-    text = _decode_metadata_value(value)
-    if not text:
-        return None
-
-    candidates = [text]
-    if "\x00" in text:
-        candidates.extend(part for part in text.split("\x00") if part.strip())
-
-    for candidate in candidates:
-        candidate = candidate.strip()
-        if not candidate or candidate[0] not in "[{":
-            continue
-        try:
-            return json.loads(candidate)
-        except json.JSONDecodeError:
-            continue
-
-    return None
-
-
-def _find_json_metadata(metadata: dict[str, Any], preferred_keys: tuple[str, ...]) -> dict[str, Any] | None:
-    for key in preferred_keys:
-        value = _coerce_json(metadata.get(key))
-        if isinstance(value, dict):
-            return value
-
-    return None
-
-
-def _find_workflow(metadata: dict[str, Any]) -> dict[str, Any] | None:
-    preferred_keys = ("workflow", "Workflow", "comfyui_workflow", "ComfyUI Workflow")
-    workflow = _find_json_metadata(metadata, preferred_keys)
-    if isinstance(workflow, dict) and "nodes" in workflow:
-        return workflow
-
-    for value in metadata.values():
-        workflow = _coerce_json(value)
-        if isinstance(workflow, dict) and "nodes" in workflow:
-            return workflow
-
-    return None
-
-
-def _find_prompt(metadata: dict[str, Any]) -> dict[str, Any] | None:
-    preferred_keys = ("prompt", "Prompt")
-    prompt = _find_json_metadata(metadata, preferred_keys)
-    if isinstance(prompt, dict):
-        return prompt
-
-    return None
-
-
-def _iter_nodes(workflow: dict[str, Any]):
-    stack = [workflow]
-    while stack:
-        current = stack.pop()
-        nodes = current.get("nodes", [])
-        if isinstance(nodes, list):
-            for node in nodes:
-                if not isinstance(node, dict):
-                    continue
-                yield node
-                for subgraph_key in ("subgraph", "workflow"):
-                    subgraph = node.get(subgraph_key)
-                    if isinstance(subgraph, dict):
-                        stack.append(subgraph)
-
-        definitions = current.get("definitions", {})
-        subgraphs = definitions.get("subgraphs") if isinstance(definitions, dict) else None
-        if isinstance(subgraphs, list):
-            stack.extend(subgraph for subgraph in subgraphs if isinstance(subgraph, dict))
-
-
-def _first_string(value: Any) -> str:
-    if isinstance(value, str):
-        return value
-    if isinstance(value, dict):
-        for item in value.values():
-            found = _first_string(item)
-            if found:
-                return found
-    if isinstance(value, list):
-        for item in value:
-            found = _first_string(item)
-            if found:
-                return found
-    return ""
-
-
-def _normalize_node_id(node_id: Any) -> str:
-    return str(node_id or "").strip()
-
-
-def _node_id_matches(actual_id: Any, target_id: str) -> bool:
-    actual = _normalize_node_id(actual_id)
-    if not actual or not target_id:
-        return False
-    return actual == target_id or actual == target_id.rsplit(":", 1)[-1]
-
-
-def _prompt_from_workflow_id(workflow: dict[str, Any] | None, node_id: Any) -> str:
-    target_id = _normalize_node_id(node_id)
-    if not workflow or not target_id:
-        return ""
-
-    for node in _iter_nodes(workflow):
-        if not _node_id_matches(node.get("id"), target_id):
-            continue
-
-        widgets_values = node.get("widgets_values", [])
-        prompt = _first_string(widgets_values)
-        if prompt:
-            return prompt
-
-        return _first_string(node.get("properties", {}))
-
-    return ""
-
-
-def _prompt_from_api_prompt_id(prompt: dict[str, Any] | None, node_id: Any) -> str:
-    target_id = _normalize_node_id(node_id)
-    if not prompt or not target_id:
-        return ""
-
-    node = prompt.get(target_id)
-    if not isinstance(node, dict):
-        matches = [
-            value
-            for key, value in prompt.items()
-            if _normalize_node_id(key).rsplit(":", 1)[-1] == target_id
-        ]
-        node = matches[0] if len(matches) == 1 else None
-
-    if not isinstance(node, dict):
-        return ""
-
-    inputs = node.get("inputs", {})
-    if isinstance(inputs, dict):
-        text = inputs.get("text")
-        if isinstance(text, str):
-            return text
-
-        prompt_text = _first_string(inputs)
-        if prompt_text:
-            return prompt_text
-
-    return ""
-
-
-def _prompt_from_id(workflow: dict[str, Any] | None, prompt: dict[str, Any] | None, node_id: Any) -> str:
-    result = _prompt_from_workflow_id(workflow, node_id)
-    if result:
-        return result
-    return _prompt_from_api_prompt_id(prompt, node_id)
-
-
 def _load_image_tensor(image: Image.Image) -> torch.Tensor:
     output_images = []
     width = None
@@ -260,19 +89,38 @@ def _load_image_tensor(image: Image.Image) -> torch.Tensor:
 
     return output_images[0]
 
+def _image_input_kwargs() -> dict[str, Any]:
+    kwargs = {
+        "options": _image_options(),
+        "tooltip": "Image from ComfyUI's input folder that contains workflow or prompt metadata.",
+    }
+    if hasattr(io, "UploadType"):
+        kwargs["upload"] = io.UploadType.image
+    if hasattr(io, "FolderType"):
+        kwargs["image_folder"] = io.FolderType.input
+    return kwargs
+
+
+def _load_image_with_metadata(image: str):
+    try:
+        with node_helpers.pillow(Image.open, _get_annotated_path(image)) as img:
+            metadata = _extract_image_metadata(img)
+            workflow = _find_workflow(metadata)
+            prompt = _find_prompt(metadata)
+            output_image = _load_image_tensor(img)
+    except UnidentifiedImageError as exc:
+        raise ValueError(f"Could not load image: {image}") from exc
+    if workflow is None and prompt is None:
+        raise ValueError(f"No ComfyUI workflow or prompt metadata found in {image!r}")
+    return output_image, workflow, prompt
+
+
 class HYBS_LoadImagePromptMetadata(io.ComfyNode):
     """Load an image and return prompt strings from embedded workflow metadata."""
 
     @classmethod
     def define_schema(cls) -> io.Schema:
-        image_input_kwargs = {
-            "options": _image_options(),
-            "tooltip": "Image from ComfyUI's input folder that contains workflow or prompt metadata.",
-        }
-        if hasattr(io, "UploadType"):
-            image_input_kwargs["upload"] = io.UploadType.image
-        if hasattr(io, "FolderType"):
-            image_input_kwargs["image_folder"] = io.FolderType.input
+        image_input_kwargs = _image_input_kwargs()
 
         return io.Schema(
             node_id="HYBS_LoadImagePromptMetadata",
@@ -314,19 +162,7 @@ class HYBS_LoadImagePromptMetadata(io.ComfyNode):
 
     @classmethod
     def execute(cls, image: str, positive_node_id: str, negative_node_id: str) -> io.NodeOutput:
-        image_path = _get_annotated_path(image)
-
-        try:
-            with node_helpers.pillow(Image.open, image_path) as img:
-                metadata = _extract_image_metadata(img)
-                workflow = _find_workflow(metadata)
-                prompt = _find_prompt(metadata)
-                output_image = _load_image_tensor(img)
-        except UnidentifiedImageError as exc:
-            raise ValueError(f"Could not load image: {image}") from exc
-
-        if workflow is None and prompt is None:
-            raise ValueError(f"No ComfyUI workflow or prompt metadata found in {image!r}")
+        output_image, workflow, prompt = _load_image_with_metadata(image)
 
         positive = _prompt_from_id(workflow, prompt, positive_node_id)
         negative = _prompt_from_id(workflow, prompt, negative_node_id)
@@ -355,31 +191,13 @@ class HYBS_LoadImagePromptMetadataAdvance(io.ComfyNode):
 
     @classmethod
     def _parse_selection(cls, selection) -> list[str]:
-        if isinstance(selection, dict):
-            values = selection.get("selected", [])
-        elif isinstance(selection, str):
-            try:
-                values = json.loads(selection)
-            except json.JSONDecodeError:
-                values = []
-        else:
-            values = []
-
-        if not isinstance(values, list):
-            return []
+        values = selection_values(selection)
 
         return [_normalize_node_id(value) for value in values if _normalize_node_id(value)]
 
     @classmethod
     def define_schema(cls) -> io.Schema:
-        image_input_kwargs = {
-            "options": _image_options(),
-            "tooltip": "Image from ComfyUI's input folder that contains workflow or prompt metadata.",
-        }
-        if hasattr(io, "UploadType"):
-            image_input_kwargs["upload"] = io.UploadType.image
-        if hasattr(io, "FolderType"):
-            image_input_kwargs["image_folder"] = io.FolderType.input
+        image_input_kwargs = _image_input_kwargs()
 
         return io.Schema(
             node_id="HYBS_LoadImagePromptMetadataAdvance",
@@ -412,9 +230,10 @@ class HYBS_LoadImagePromptMetadataAdvance(io.ComfyNode):
         if base_validation is not True:
             return base_validation
 
-        if not cls._parse_selection(selection):
+        node_ids = cls._parse_selection(selection)
+        if not node_ids:
             return "At least one prompt node ID is required."
-        if len(cls._parse_selection(selection)) > ADVANCED_MAX_PROMPTS:
+        if len(node_ids) > ADVANCED_MAX_PROMPTS:
             return f"Prompt node IDs must be {ADVANCED_MAX_PROMPTS} or fewer."
 
         return True
@@ -427,19 +246,7 @@ class HYBS_LoadImagePromptMetadataAdvance(io.ComfyNode):
         if len(node_ids) > ADVANCED_MAX_PROMPTS:
             raise ValueError(f"Prompt node IDs must be {ADVANCED_MAX_PROMPTS} or fewer.")
 
-        image_path = _get_annotated_path(image)
-
-        try:
-            with node_helpers.pillow(Image.open, image_path) as img:
-                metadata = _extract_image_metadata(img)
-                workflow = _find_workflow(metadata)
-                prompt = _find_prompt(metadata)
-                output_image = _load_image_tensor(img)
-        except UnidentifiedImageError as exc:
-            raise ValueError(f"Could not load image: {image}") from exc
-
-        if workflow is None and prompt is None:
-            raise ValueError(f"No ComfyUI workflow or prompt metadata found in {image!r}")
+        output_image, workflow, prompt = _load_image_with_metadata(image)
 
         prompts = []
         missing = []

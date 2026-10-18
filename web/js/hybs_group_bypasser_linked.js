@@ -1,4 +1,4 @@
-import { app } from "../../../scripts/app.js";
+import { app, removeWidget } from "./common/widgets.js";
 
 const BYPASS_MODE = 4;              // ComfyUI bypass
 const ENABLE_MODE = LiteGraph.ALWAYS;
@@ -34,7 +34,7 @@ function recomputeGroupNodes(group) {
       group.recomputeInsideNodes();
     }
   } catch (_) {}
-  return group?._nodes ?? [];
+  return Array.from(group?._nodes ?? []);
 }
 
 // Collect Main + all subgraphs
@@ -65,8 +65,9 @@ function getGraphLabel(graph) {
 }
 
 // ------------------------- bypass helpers (subgraph-aware) -------------------------
-function setNodeBypassDeep(node, bypass) {
-  if (!node) return;
+function setNodeBypassDeep(node, bypass, visited = new Set()) {
+  if (!node || visited.has(node)) return;
+  visited.add(node);
   node.mode = bypass ? BYPASS_MODE : ENABLE_MODE;
 
   // If this node is a Subgraph node, also apply to its internal graph nodes recursively
@@ -74,7 +75,7 @@ function setNodeBypassDeep(node, bypass) {
   if (sg && Array.isArray(sg._nodes)) {
     for (const inner of sg._nodes) {
       if (!inner) continue;
-      setNodeBypassDeep(inner, bypass);
+      setNodeBypassDeep(inner, bypass, visited);
     }
   }
 }
@@ -120,7 +121,7 @@ function getLinkedNodesFromOutput(graph, node, outputIndex = 0) {
   const linkIds = out?.links ?? [];
   const result = [];
   for (const linkId of linkIds) {
-    const link = graph.links?.[linkId];
+    const link = graph.links?.get?.(linkId) ?? graph.links?.[linkId];
     if (!link) continue;
     const targetNode = graph.getNodeById?.(link.target_id);
     if (targetNode) result.push(targetNode);
@@ -136,8 +137,8 @@ function collectChildNodes(graph, parentNode) {
   for (const n of getLinkedNodesFromOutput(graph, parentNode, 0)) queue.push(n);
 
   const children = [];
-  while (queue.length) {
-    const n = queue.shift();
+  for (let index = 0; index < queue.length; index++) {
+    const n = queue[index];
     if (!n || visited.has(n.id)) continue;
     visited.add(n.id);
 
@@ -449,20 +450,21 @@ app.registerExtension({
             const groups = getGroups(gr);
             for (const gp of groups) {
               const label = `[${glabel}] ${getGroupTitle(gp)}`;
-              entries.push({ graph: gr, group: gp, label, idx: idx++ });
+              entries.push({ graph: gr, group: gp, label, idx: idx++, hasParent: groupHasParentNode(gr, gp) });
             }
           }
 
-          const labels = entries.map((e) => e.label);
-          const sig = `${labels.length}:${labels.join("|")}`;
-          if (!force && sig === this._hybsSig) return;
+          const sig = JSON.stringify(entries.map((entry) => [entry.label, entry.hasParent]));
+          const sameGroups = this._hybsEntries?.length === entries.length && entries.every((entry, index) =>
+            entry.graph === this._hybsEntries[index].graph && entry.group === this._hybsEntries[index].group);
+          if (!force && sameGroups && sig === this._hybsSig) return;
           this._hybsSig = sig;
+          this._hybsEntries = entries;
 
           // remove dynamic toggles safely
           if (this.widgets && this.widgets.length > this._hybsStaticCount) {
             for (const widget of this.widgets.slice(this._hybsStaticCount)) {
-              if (typeof this.removeWidget === "function") this.removeWidget(widget);
-              else this.widgets.splice(this.widgets.indexOf(widget), 1);
+              removeWidget(this, widget);
             }
           }
 
@@ -485,7 +487,7 @@ app.registerExtension({
 
           // build toggles (graph-aware)
           for (const e of ordered) {
-            const hasParent = groupHasParentNode(e.graph, e.group);
+            const hasParent = e.hasParent;
             const label = hasParent ? `${e.label} (cascade)` : e.label;
 
             const w = this.addWidget("toggle", label, isGroupBypassed(e.group), (v) => {

@@ -8,3 +8,5 @@ Use it for integer parameters in workflows that repeat or iterate over a list.
 
 - **int list**: Integer values.
 - **count**: Number of entries.
+
+Invalid numeric entries, including NaN and infinity, are ignored. At least one valid value is required.

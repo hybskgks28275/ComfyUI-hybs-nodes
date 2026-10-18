@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import json
 
 import folder_paths
 
 from ..hybs_comfy_api import io
+from ..hybs_selection import selection_values
 
 LOG_PREFIX = '[HYBS]["Diffusion Model List"]'
 
@@ -24,18 +24,7 @@ class HYBS_DiffusionModelList(io.ComfyNode):
 
     @classmethod
     def _parse_selection(cls, selection) -> list[str]:
-        if isinstance(selection, dict):
-            values = selection.get("selected", [])
-        elif isinstance(selection, str):
-            try:
-                values = json.loads(selection)
-            except json.JSONDecodeError:
-                values = []
-        else:
-            values = []
-
-        if not isinstance(values, list):
-            return []
+        values = selection_values(selection)
 
         return [value for value in values if isinstance(value, str) and value.strip()]
 

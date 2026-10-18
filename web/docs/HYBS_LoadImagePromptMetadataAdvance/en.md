@@ -10,3 +10,5 @@ The node raises an error when no ID is supplied, metadata is missing, or any sup
 
 - **IMAGE**: Loaded image.
 - **prompt_1** through **prompt_20**: Prompt text in the specified node-ID order. Unused outputs are empty strings.
+
+Exact node IDs take priority. A shortened subgraph ID is used only when it identifies one node; ambiguous IDs produce an error.
