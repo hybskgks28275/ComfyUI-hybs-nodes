@@ -14,7 +14,14 @@ const graph = {
   getNodeById(id) { return this._nodes.find((node) => node.id === id); },
 };
 const app = { graph, registerExtension(extension) { extensions.set(extension.name, extension); } };
+class Element {
+  constructor(tag) { this.tagName = tag; this.style = {}; this.children = []; this.events = {}; this.value = ''; }
+  setAttribute(name, value) { this[name] = value; }
+  appendChild(element) { this.children.push(element); }
+  addEventListener(name, listener) { this.events[name] = listener; }
+}
 const context = vm.createContext({
+  document: { createElement: (tag) => new Element(tag) },
   LiteGraph: { ALWAYS: 0 }, console, Date,
   setTimeout(fn) { const id = ++timerId; timers.set(id, fn); return id; },
   clearTimeout(id) { timers.delete(id); },
@@ -39,7 +46,7 @@ for (const filename of fs.readdirSync(root).filter((name) => name.endsWith('.js'
   });
   await module.evaluate();
 }
-assert.equal(extensions.size, 6, 'all six extension entrypoints register');
+assert.equal(extensions.size, 7, 'all seven extension entrypoints register');
 
 class TestNode {
   constructor(selection = '[]') {
@@ -62,6 +69,11 @@ class TestNode {
     const widget = { type, name, callback, options };
     Object.defineProperty(widget, 'value', { get() { return state.value; }, set(value) { state.value = value; } });
     this.widgets.push(widget);
+    return widget;
+  }
+  addDOMWidget(name, type, element, options) {
+    const widget = this.addWidget(type, name, '', () => {}, options);
+    widget.element = element;
     return widget;
   }
   removeWidget(widget) { this.store.delete(widget.name); this.widgets.splice(this.widgets.indexOf(widget), 1); }
@@ -145,6 +157,40 @@ prompts.outputs[4].links = [123]; flushTimeouts();
 assert.equal(prompts.outputs.length, 5, 'connected output slots remain intact');
 assertNoLeaks(prompts); prompts.onRemoved();
 
+// Headings never become serialized COMBO values, even if an event is dispatched manually.
+const headingExtension = extensions.get('HYBS.ResolutionSelector.Headings');
+class ResolutionNode extends TestNode {}
+await headingExtension.beforeRegisterNodeDef(ResolutionNode, {
+  name: 'HYBS_ResolutionSelector', input: { required: { resolution: ['COMBO', {
+    hybs_resolution_entries: ['1024 equivalent', [896, 1152], '1280 equivalent', [1280, 1280]],
+  }] } },
+});
+const resolutionNode = new ResolutionNode();
+const canonical = resolutionNode.addWidget('combo', 'resolution', '896x1152', () => {});
+resolutionNode.onNodeCreated();
+const resolutionDisplay = widget(resolutionNode, 'resolution groups');
+const select = resolutionDisplay.element.children[0];
+assert.equal(select.children[0].disabled, true);
+assert.equal(select.children[2].disabled, true);
+assert.equal(select.value, '896x1152');
+select.value = '__hybs_heading_0'; select.events.change({});
+assert.equal(canonical.value, '896x1152');
+assert.equal(select.value, '896x1152');
+select.value = '1280x1280'; select.events.change({});
+assert.equal(canonical.value, '1280x1280');
+assert.equal(resolutionDisplay.serialize, false);
+assert.equal(canonical.type, 'hidden');
+canonical.value = '896x1152'; resolutionNode.onConfigure();
+assert.equal(select.value, '896x1152');
+class LegacyResolutionNode extends TestNode {}
+await headingExtension.beforeRegisterNodeDef(LegacyResolutionNode, {
+  name: 'HYBS_ResolutionSelector', input: { required: { resolution: ['COMBO', {
+    hybs_resolution_entries: [[896, 1152]],
+  }] } },
+});
+const legacyResolution = new LegacyResolutionNode();
+assert.equal(legacyResolution.onNodeCreated, undefined);
+
 // Same-title group replacement used to keep callbacks bound to the removed group.
 const parent = { id: 1, comfyClass: 'HYBS_GroupBypasser_Parent', outputs: [{ links: [1] }], mode: 0 };
 const child = { id: 2, comfyClass: 'HYBS_GroupBypasser_Child', outputs: [{ links: [] }], mode: 0 };
@@ -166,4 +212,4 @@ panel._hybsPoll();
 change(panel, '[Main] Child', true);
 assert.equal(replacement.mode, 4); assert.equal(child.mode, 0);
 panel.onRemoved();
-console.log('PASS: six extensions, numeric normalization and restore, native counts, user size, row deletion/addition, store cleanup, linked outputs, cascade, same-title group replacement');
+console.log('PASS: seven extensions, resolution headings and legacy values, numeric normalization and restore, native counts, user size, row deletion/addition, store cleanup, linked outputs, cascade, same-title group replacement');
