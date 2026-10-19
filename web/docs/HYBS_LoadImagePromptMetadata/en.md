@@ -10,3 +10,5 @@ The node raises an error when metadata is missing or either ID does not resolve 
 
 - **IMAGE**: Loaded image.
 - **positive**, **negative**: Prompt text from the specified node IDs.
+
+Exact node IDs take priority. A shortened subgraph ID is used only when it identifies one node; ambiguous IDs produce an error.

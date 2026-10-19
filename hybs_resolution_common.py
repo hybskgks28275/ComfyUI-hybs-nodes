@@ -32,30 +32,43 @@ def resolution_config_path() -> str:
     base = os.path.dirname(__file__)  # extension root (this file lives here)
     return os.path.join(base, _CONFIG_DIR, _CONFIG_NAME)
 
-def _validate_pairs(data) -> List[Tuple[int, int]]:
-    if not (
-        isinstance(data, list)
-        and len(data) > 0
-        and all(
-            isinstance(x, (list, tuple)) and len(x) == 2
-            and isinstance(x[0], int) and isinstance(x[1], int)
-            for x in data
-        )
-    ):
-        raise ValueError(f"{_CONFIG_NAME} must be a non-empty list of [width, height] integer pairs.")
-    return [tuple(x) for x in data]  # type: ignore
+def _validate_entries(data) -> list[str | tuple[int, int]]:
+    """Strings are display-only headings; pairs are selectable resolutions."""
+    if not isinstance(data, list) or not data:
+        raise ValueError(f"{_CONFIG_NAME} must be a non-empty array.")
+    entries = []
+    for item in data:
+        if isinstance(item, str) and item.strip():
+            entries.append(item.strip())
+        elif (
+            isinstance(item, (list, tuple)) and len(item) == 2
+            and all(type(value) is int and value > 0 for value in item)
+        ):
+            entries.append(tuple(item))
+        else:
+            raise ValueError(f"{_CONFIG_NAME} entries must be non-empty headings or positive [width, height] integer pairs.")
+    if not any(isinstance(item, tuple) for item in entries):
+        raise ValueError(f"{_CONFIG_NAME} must contain at least one resolution pair.")
+    return entries
 
-def load_resolution_combos() -> List[Tuple[int, int]]:
-    """
-    Load combos from JSON; raise on parse/format errors; fallback to DEFAULT_COMBOS when file is missing.
-    (Exceptions bubble to UI; do not print duplicate logs.)
-    """
+
+def _validate_pairs(data) -> List[Tuple[int, int]]:
+    return [entry for entry in _validate_entries(data) if not isinstance(entry, str)]
+
+
+def load_resolution_entries() -> list[str | tuple[int, int]]:
+    """Load ordered headings and resolutions, retaining legacy pair-only files."""
     path = resolution_config_path()
     if os.path.isfile(path):
-        with open(path, encoding="utf-8") as f:
-            data = json.load(f)  # may raise JSONDecodeError
-        return _validate_pairs(data)
-    return DEFAULT_COMBOS
+        with open(path, encoding="utf-8") as file:
+            return _validate_entries(json.load(file))
+    return list(DEFAULT_COMBOS)
+
+
+def load_resolution_combos() -> List[Tuple[int, int]]:
+    """Return only numeric pairs, preserving order and duplicate weighting."""
+    return [entry for entry in load_resolution_entries() if not isinstance(entry, str)]
+
 
 def get_resolution_config_mtime() -> float:
     """Return mtime for fingerprinting; 0 if missing or error."""

@@ -8,3 +8,5 @@ Use it as a separate strength list for LoRA List or wherever a workflow needs a 
 
 - **double list**: Floating-point values.
 - **count**: Number of entries.
+
+Invalid numeric entries, including NaN and infinity, are ignored. At least one valid value is required.

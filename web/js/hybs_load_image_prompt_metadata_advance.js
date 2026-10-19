@@ -1,25 +1,11 @@
-import { app } from "../../../scripts/app.js";
+import { app, findWidget, hideWidget, removeWidget } from "./common/widgets.js";
 
 const CT_ADVANCE = "HYBS_LoadImagePromptMetadataAdvance";
-const HIDDEN_WIDGET_SIZE = [0, -4];
 const BASE_OUTPUTS = 1;
 const MAX_PROMPTS = 20;
 
 function isNodeIdWidget(widget) {
   return typeof widget?.name === "string" && widget.name.startsWith("node_id_");
-}
-
-function findWidget(node, name) {
-  return node.widgets?.find((widget) => widget?.name === name);
-}
-
-function hideWidget(widget) {
-  if (!widget) {
-    return;
-  }
-  widget.hidden = true;
-  widget.type = "hidden";
-  widget.computeSize = () => HIDDEN_WIDGET_SIZE;
 }
 
 function findNodeIdWidgets(node) {
@@ -107,7 +93,8 @@ function syncPromptOutputs(node, desiredCount) {
     if (Array.isArray(links) && links.length > 0) {
       break;
     }
-    node.outputs.pop();
+    if (typeof node.removeOutput === "function") node.removeOutput(node.outputs.length - 1);
+    else node.outputs.pop();
   }
 
   while (node.outputs.length < BASE_OUTPUTS + count) {
@@ -126,7 +113,8 @@ function syncPromptOutputs(node, desiredCount) {
 }
 
 function schedulePromptOutputSync(node, desiredCount) {
-  setTimeout(() => {
+  clearTimeout(node._hybsOutputSyncTimer);
+  node._hybsOutputSyncTimer = setTimeout(() => {
     try {
       syncPromptOutputs(node, desiredCount);
       app.graph?.setDirtyCanvas?.(true, true);
@@ -161,42 +149,13 @@ function addNodeIdWidget(node, selectionWidget, value = "") {
   widget.label = `node id ${index + 1}`;
   widget.options = widget.options || {};
   widget.options.serialize = false;
+  widget.serialize = false;
   return widget;
 }
 
 function refreshSelection(node, selectionWidget) {
-  const baseSize = Array.isArray(node.size) ? [node.size[0], node.size[1]] : null;
-  const selected = [];
-  let widgetIndex = 0;
-  let promptIndex = 0;
-
-  while (widgetIndex < node.widgets.length) {
-    const widget = node.widgets[widgetIndex];
-    if (!isNodeIdWidget(widget)) {
-      widgetIndex += 1;
-      continue;
-    }
-
-    const value = String(widget.value || "").trim();
-    if (!value) {
-      node.widgets.splice(widgetIndex, 1);
-      continue;
-    }
-
-    widget.name = `node_id_${promptIndex}`;
-    widget.label = `node id ${promptIndex + 1}`;
-    widget.value = value;
-    selected.push(value);
-    widgetIndex += 1;
-    promptIndex += 1;
-  }
-
-  addNodeIdWidget(node, selectionWidget, "");
-  storeSelection(node, selectionWidget, selected);
-  orderWidgets(node);
-  schedulePromptOutputSync(node, selected.length + 1);
-  applyNodeSize(node, "preserve", baseSize);
-  app.graph?.setDirtyCanvas?.(true, true);
+  storeSelection(node, selectionWidget, getSelectedNodeIds(node));
+  refreshFromSelection(node, selectionWidget);
 }
 
 function refreshFromSelection(node, selectionWidget, mode = "preserve") {
@@ -205,7 +164,7 @@ function refreshFromSelection(node, selectionWidget, mode = "preserve") {
   while (widgetIndex < node.widgets.length) {
     const widget = node.widgets[widgetIndex];
     if (isNodeIdWidget(widget)) {
-      node.widgets.splice(widgetIndex, 1);
+      removeWidget(node, widget);
       continue;
     }
     widgetIndex += 1;
@@ -286,6 +245,12 @@ app.registerExtension({
     nodeType.prototype.onResize = function (size) {
       originalOnResize?.apply(this, [size]);
       resetWidgetLayout(this);
+    };
+
+    const originalOnRemoved = nodeType.prototype.onRemoved;
+    nodeType.prototype.onRemoved = function (...args) {
+      clearTimeout(this._hybsOutputSyncTimer);
+      return originalOnRemoved?.apply(this, args);
     };
 
     const originalOnSerialize = nodeType.prototype.onSerialize;

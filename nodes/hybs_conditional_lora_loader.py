@@ -4,15 +4,10 @@ import os
 import re
 from typing import Any
 
-from ..hybs_comfy_api import io
-
-try:
-    from comfy import sd
-except Exception:
-    sd = None
+from ..hybs_comfy_api import io, resolve_type
+from ..hybs_lora_common import apply_lora, lora_token
 
 import folder_paths
-import comfy.utils as utils
 
 LOG_PREFIX = '[HYBS]["Conditional LoRA Loader"]'
 
@@ -21,64 +16,10 @@ def _log(message: str) -> None:
     print(f"{LOG_PREFIX} {message}")
 
 
-# ---- Type fallback helpers ---------------------------------------------------
-def _resolve_type(name: str):
-    """
-    Try io.<Name>, then io.<CamelCase>, else fall back to io.Custom(name).
-    Keeps sockets link-compatible across API versions.
-    """
-    t = getattr(io, name, None)
-    if t is not None:
-        return t
-    # e.g. "CLIP" -> "Clip"
-    camel = name[:1].upper() + name[1:].lower()
-    t = getattr(io, camel, None)
-    if t is not None:
-        return t
-    # final fallback: custom type with the same type-id
-    return io.Custom(name)
-
-_Model = _resolve_type("Model")
-_CLIP = _resolve_type("CLIP")
+_Model = resolve_type("Model")
+_CLIP = resolve_type("CLIP")
 
 
-# ---- Internal: LoRA applier --------------------------------------------------
-def _apply_lora(model, clip, lora_path: str, lora_name: str, sm: float, sc: float):
-    # 1) comfy.sd.load_lora
-    if sd is not None and hasattr(sd, "load_lora"):
-        try:
-            m, c = sd.load_lora(model, clip, lora_path, sm, sc)
-            return m, c, True
-        except Exception as e:
-            _log(f"comfy.sd.load_lora failed: {e}")
-
-    # 2) built-in nodes.LoraLoader
-    try:
-        from nodes import LoraLoader as _BuiltinLoraLoader
-        try:
-            m, c = _BuiltinLoraLoader().load_lora(model, clip, lora_name, sm, sc)
-            return m, c, True
-        except Exception as e:
-            _log(f"nodes.LoraLoader failed: {e}")
-    except Exception:
-        pass
-
-    # 3) low-level fallback
-    try:
-        lora = utils.load_torch_file(lora_path, safe_load=True)
-        if hasattr(utils, "apply_lora"):
-            model = utils.apply_lora(model, lora, sm)
-            if clip is not None and sc != 0.0 and hasattr(utils, "apply_lora_to_clip"):
-                clip = utils.apply_lora_to_clip(clip, lora, sc)
-            return model, clip, True
-    except Exception as e:
-        _log(f"fallback apply_lora failed: {e}")
-
-    _log("All loaders failed -> passthrough.")
-    return model, clip, False
-
-
-# ---- Node (V3 schema) --------------------------------------------------------
 class HYBS_ConditionalLoRALoader(io.ComfyNode):
     CONFIG_DIR = None
 
@@ -131,7 +72,7 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
 
     @staticmethod
     def _match(positive: str, pattern: str) -> bool:
-        if not pattern:
+        if not isinstance(pattern, str) or not pattern:
             return False
         try:
             return re.search(pattern, positive or "") is not None
@@ -149,7 +90,7 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
                 import tomllib as _toml  # py311+
                 with open(full, "rb") as fp:
                     data = _toml.load(fp)
-            except Exception:
+            except ImportError:
                 import toml as _toml
                 with open(full, "r", encoding="utf-8") as fp:
                     data = _toml.load(fp)
@@ -157,6 +98,8 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
             raise RuntimeError(f"Failed to parse TOML: {e}")
         if not isinstance(data, dict) or "lora" not in data or not isinstance(data["lora"], list):
             raise ValueError("TOML must contain [[lora]] array")
+        if not all(isinstance(entry, dict) for entry in data["lora"]):
+            raise ValueError("Each LoRA entry must be a table")
         return data["lora"]
 
     @classmethod
@@ -180,8 +123,14 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
         for i, ent in enumerate(entries):
             trig = ent.get("trigger", "")
             name = ent.get("name", "")
-            sm = float(ent.get("strength_model", 1.0))
-            sc = float(ent.get("strength_clip", 1.0))
+            try:
+                sm = float(ent.get("strength_model", 1.0))
+                sc = float(ent.get("strength_clip", 1.0))
+            except (TypeError, ValueError):
+                _log(f"Skipping LoRA entry #{i}: invalid strengths")
+                continue
+            if not isinstance(name, str) or not name:
+                continue
 
             matched = cls._match(src, trig)
             _log(f"#{i} matched={matched} trigger={trig!r} name={name!r} sm={sm} sc={sc}")
@@ -194,16 +143,12 @@ class HYBS_ConditionalLoRALoader(io.ComfyNode):
                 continue
 
             try:
-                new_model, new_clip, applied = _apply_lora(model, clip, lora_path, name, sm, sc)
+                new_model, new_clip, applied = apply_lora(model, clip, lora_path, name, sm, sc, log=_log)
                 if applied:
                     _log(f"Applied LoRA: {name} (m={sm}, c={sc})")
                     model, clip = new_model, new_clip
                     applied_any = True
-                    # Build token with filename (no extension, no quotes)
-                    base = os.path.basename(name)
-                    stem, _ = os.path.splitext(base)
-                    token = f"<lora:{stem}:{sm}:{sc}>"
-                    applied_tokens.append(token)
+                    applied_tokens.append(lora_token(name, sm, sc))
                 else:
                     _log(f"Failed to apply LoRA: {name}")
             except Exception as e:

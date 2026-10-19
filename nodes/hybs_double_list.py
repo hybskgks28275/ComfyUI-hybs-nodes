@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-import json
+import math
+
 
 from ..hybs_comfy_api import io
+from ..hybs_selection import selection_values
 
 LOG_PREFIX = '[HYBS]["Double List"]'
 
@@ -18,23 +20,14 @@ class HYBS_DoubleList(io.ComfyNode):
 
     @classmethod
     def _parse_selection(cls, selection) -> list[float]:
-        if isinstance(selection, dict):
-            values = selection.get("selected", [])
-        elif isinstance(selection, str):
-            try:
-                values = json.loads(selection)
-            except json.JSONDecodeError:
-                values = []
-        else:
-            values = []
-
-        if not isinstance(values, list):
-            return []
+        values = selection_values(selection)
 
         parsed = []
         for value in values:
             try:
-                parsed.append(float(value))
+                number = float(value)
+                if math.isfinite(number):
+                    parsed.append(number)
             except (TypeError, ValueError):
                 continue
         return parsed

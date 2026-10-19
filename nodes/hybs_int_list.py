@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import json
 
 from ..hybs_comfy_api import io
+from ..hybs_selection import selection_values
 
 LOG_PREFIX = '[HYBS]["Int List"]'
 
@@ -18,24 +18,13 @@ class HYBS_IntList(io.ComfyNode):
 
     @classmethod
     def _parse_selection(cls, selection) -> list[int]:
-        if isinstance(selection, dict):
-            values = selection.get("selected", [])
-        elif isinstance(selection, str):
-            try:
-                values = json.loads(selection)
-            except json.JSONDecodeError:
-                values = []
-        else:
-            values = []
-
-        if not isinstance(values, list):
-            return []
+        values = selection_values(selection)
 
         parsed = []
         for value in values:
             try:
                 parsed.append(int(value))
-            except (TypeError, ValueError):
+            except (TypeError, ValueError, OverflowError):
                 continue
         return parsed
 

@@ -13,4 +13,13 @@ except Exception as exc:  # pragma: no cover - runtime compatibility path
     traceback.print_exc()
     from comfy_api import ComfyExtension, io
 
-__all__ = ["ComfyExtension", "io"]
+def resolve_type(name: str):
+    """Keep socket type compatibility across Comfy API versions."""
+    for candidate in (name, name[:1].upper() + name[1:].lower()):
+        resolved = getattr(io, candidate, None)
+        if resolved is not None:
+            return resolved
+    return io.Custom(name)
+
+
+__all__ = ["ComfyExtension", "io", "resolve_type"]
