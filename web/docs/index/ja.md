@@ -11,6 +11,7 @@
 | Seed List Generator | [開く](../HYBS_SeedListGenerator/ja.md) |
 | Conditional LoRA Loader | [開く](../HYBS_ConditionalLoRALoader/ja.md) |
 | Load LoRA | [開く](../HYBS_LoadLoRA/ja.md) |
+| Load LoRA Stack | [開く](../HYBS_LoadLoRAStack/ja.md) |
 | Diffusion Model List | [開く](../HYBS_DiffusionModelList/ja.md) |
 | LoRA List | [開く](../HYBS_LoRAList/ja.md) |
 | Double List | [開く](../HYBS_DoubleList/ja.md) |

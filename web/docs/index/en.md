@@ -11,6 +11,7 @@ Documentation is available for every node.
 | Seed List Generator | [Open](../HYBS_SeedListGenerator/en.md) |
 | Conditional LoRA Loader | [Open](../HYBS_ConditionalLoRALoader/en.md) |
 | Load LoRA | [Open](../HYBS_LoadLoRA/en.md) |
+| Load LoRA Stack | [Open](../HYBS_LoadLoRAStack/en.md) |
 | Diffusion Model List | [Open](../HYBS_DiffusionModelList/en.md) |
 | LoRA List | [Open](../HYBS_LoRAList/en.md) |
 | Double List | [Open](../HYBS_DoubleList/en.md) |
