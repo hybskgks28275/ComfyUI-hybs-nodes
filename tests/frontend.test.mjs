@@ -18,10 +18,16 @@ class Element {
   constructor(tag) { this.tagName = tag; this.style = {}; this.children = []; this.events = {}; this.value = ''; }
   setAttribute(name, value) { this[name] = value; }
   appendChild(element) { this.children.push(element); }
+  append(...elements) { this.children.push(...elements); }
+  replaceChildren(...elements) { this.children = [...elements]; }
   addEventListener(name, listener) { this.events[name] = listener; }
+  removeEventListener(name) { delete this.events[name]; }
 }
+const documentEvents = new Element('document');
+const windowEvents = new Element('window');
 const context = vm.createContext({
-  document: { createElement: (tag) => new Element(tag) },
+  document: Object.assign(documentEvents, { createElement: (tag) => new Element(tag) }),
+  window: windowEvents,
   LiteGraph: { ALWAYS: 0 }, console, Date,
   setTimeout(fn) { const id = ++timerId; timers.set(id, fn); return id; },
   clearTimeout(id) { timers.delete(id); },
@@ -46,7 +52,36 @@ for (const filename of fs.readdirSync(root).filter((name) => name.endsWith('.js'
   });
   await module.evaluate();
 }
-assert.equal(extensions.size, 7, 'all seven extension entrypoints register');
+assert.equal(extensions.size, 8, 'all eight extension entrypoints register');
+
+const stack = sourceModule(path.join(root, 'hybs_load_lora.js')).namespace;
+const tree = stack.loraTree(['NONE', 'animals/cat.safetensors', 'styles/ink/cat.safetensors', 'windows\\nested\\file.safetensors']);
+assert.equal(tree.folders.size, 3);
+assert.equal(tree.folders.get('styles').folders.get('ink').files[0].name, 'styles/ink/cat.safetensors');
+assert.equal(tree.folders.get('windows').folders.get('nested').files[0].name, 'windows\\nested\\file.safetensors');
+assert.equal(stack.nextStrength(19.99, 1), 20);
+assert.equal(stack.nextStrength(20, 1), 20);
+assert.equal(stack.nextStrength(-20, -1), -20);
+assert.equal(stack.nextStrength(0.1, 1), 0.11);
+const heldButton = new Element('button');
+let heldSteps = 0, heldBegins = 0, heldEnds = 0;
+const cleanupHold = stack.bindHold(heldButton, () => heldSteps++, () => heldBegins++, () => heldEnds++);
+heldButton.events.pointerdown({ button: 0, preventDefault() {}, pointerId: 1 });
+assert.equal(heldSteps, 1);
+const delay = [...timers]; timers.clear(); delay.forEach(([, fn]) => fn());
+for (const fn of timers.values()) { fn(); fn(); }
+assert.equal(heldSteps, 3);
+heldButton.events.pointercancel();
+assert.equal(timers.size, 0);
+assert.equal(heldBegins, heldEnds);
+heldButton.events.click({ detail: 0 });
+assert.equal(heldSteps, 4, 'keyboard activation changes once');
+heldButton.events.pointerdown({ button: 0, preventDefault() {}, pointerId: 2 });
+windowEvents.events.blur();
+assert.equal(timers.size, 0, 'blur cancels repetition');
+cleanupHold();
+assert.equal(heldBegins, heldEnds);
+assert.equal(Object.keys(heldButton.events).length, 0);
 
 class TestNode {
   constructor(selection = '[]') {
@@ -212,4 +247,44 @@ panel._hybsPoll();
 change(panel, '[Main] Child', true);
 assert.equal(replacement.mode, 4); assert.equal(child.mode, 0);
 panel.onRemoved();
-console.log('PASS: seven extensions, resolution headings and legacy values, numeric normalization and restore, native counts, user size, row deletion/addition, store cleanup, linked outputs, cascade, same-title group replacement');
+const stackNode = await nodeFor('HYBS.LoadLoRAStack', 'HYBS_LoadLoRAStack', '[]');
+stackNode.addWidget('combo', 'lora_name', 'NONE', () => {}, { values: ['NONE', 'a', 'b'] });
+stackNode.addWidget('number', 'strength_model', 1, () => {});
+stackNode.addWidget('number', 'strength_clip', 1, () => {});
+stackNode.onNodeCreated();
+const stackPanel = widget(stackNode, 'hybs_lora_controls').element;
+const descendants = (element) => [element, ...element.children.flatMap(descendants)];
+const clickStack = (text) => descendants(stackPanel).find(el => el.textContent === text).events.click({ detail: 1 });
+clickStack('Add LoRA'); clickStack('Add LoRA'); clickStack('Add LoRA');
+assert.equal(JSON.parse(widget(stackNode, 'selection').value).length, 3);
+stackNode._hybsLoRAUI.entries[1].lora_name = 'b';
+stackNode._hybsLoRAUI.entries[1].strength_model = 0.45;
+const stackSwitch = descendants(stackPanel).filter(el => el.role === 'switch')[1];
+stackSwitch.events.click({ detail: 1 });
+assert.equal(JSON.parse(widget(stackNode, 'selection').value)[1].enabled, false);
+clickStack('Remove');
+assert.equal(JSON.parse(widget(stackNode, 'selection').value)[0].lora_name, 'b');
+assert.equal(JSON.parse(widget(stackNode, 'selection').value)[0].strength_model, 0.45);
+const stackSaved = widget(stackNode, 'selection').value;
+clickStack('Remove'); clickStack('Remove');
+assert.equal(widget(stackNode, 'selection').value, '[]');
+assert.equal(widget(stackNode, 'hybs_lora_controls').computeSize()[1], 44);
+widget(stackNode, 'selection').value = stackSaved;
+stackNode.onConfigure();
+assert.equal(stackNode._hybsLoRAUI.entries.length, 2);
+assert.equal(stackNode._hybsLoRAUI.entries[0].strength_model, 0.45);
+assert.equal(stackNode._hybsLoRAUI.entries[0].enabled, false);
+const restoredSwitch = descendants(stackPanel).find(el => el.role === 'switch');
+restoredSwitch.events.click({ detail: 1 });
+assert.equal(JSON.parse(widget(stackNode, 'selection').value)[0].enabled, true);
+assert.equal(JSON.parse(widget(stackNode, 'selection').value)[0].lora_name, 'b');
+widget(stackNode, 'selection').value = '';
+widget(stackNode, 'lora_name').value = 'a';
+widget(stackNode, 'strength_model').value = 0.6;
+stackNode.onConfigure();
+assert.equal(stackNode._hybsLoRAUI.entries[0].lora_name, 'a');
+assert.equal(stackNode._hybsLoRAUI.entries[0].strength_model, 0.6);
+assert.equal(stackNode._hybsLoRAUI.entries[0].enabled, true);
+stackNode.onRemoved();
+
+console.log('PASS: eight extensions, LoRA stack add/remove/restore/legacy, resolution headings and legacy values, numeric normalization and restore, native counts, user size, row deletion/addition, store cleanup, linked outputs, cascade, same-title group replacement');

@@ -182,6 +182,72 @@ class NodeSelectionTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             node.execute(selection='["a",null]')
 
+    def test_lora_stack_empty_and_zero_strength_skip_loading(self):
+        node = self.node('hybs_load_lora', 'HYBS_LoadLoRAStack')
+        for name in ('NONE', '', None):
+            self.assertEqual(node.execute(model='model', clip='clip', lora_name=name), ('model', 'clip', ''))
+            self.assertIs(node.validate_inputs(lora_name=name), True)
+        self.assertEqual(node.execute(model='model', clip='clip', lora_name='a', strength_model=0, strength_clip=0), ('model', 'clip', ''))
+        self.assertEqual(node.execute(lora_name='a'), (None, None, ''))
+        self.lora.apply_lora.assert_not_called()
+
+    def test_lora_stack_model_te_and_combined(self):
+        node = self.node('hybs_load_lora', 'HYBS_LoadLoRAStack')
+        with patch.object(sys.modules['folder_paths'], 'get_full_path', return_value='/a', create=True):
+            for model, clip, sm, sc in [('model', None, 0.4, 0.0), (None, 'clip', 0.0, 0.7), ('model', 'clip', 0.4, 0.7)]:
+                node.execute(model=model, clip=clip, lora_name='a', strength_model=0.4, strength_clip=0.7)
+                self.lora.apply_lora.assert_called_with(model, clip, '/a', 'a', sm, sc, log=unittest.mock.ANY)
+        self.assertIsInstance(node.validate_inputs(lora_name='missing'), str)
+
+    def test_lora_stack_missing_file_and_failed_application_are_errors(self):
+        node = self.node('hybs_load_lora', 'HYBS_LoadLoRAStack')
+        with patch.object(sys.modules['folder_paths'], 'get_full_path', return_value=None, create=True):
+            with self.assertRaises(FileNotFoundError):
+                node.execute(model='model', lora_name='a')
+        self.lora.apply_lora.return_value = ('model', 'clip', False)
+        with patch.object(sys.modules['folder_paths'], 'get_full_path', return_value='/a', create=True):
+            with self.assertRaises(RuntimeError):
+                node.execute(model='model', lora_name='a')
+
+    def test_lora_stack_applies_multiple_rows_in_order(self):
+        node = self.node('hybs_load_lora', 'HYBS_LoadLoRAStack')
+        rows = [dict(lora_name='a', strength_model=0.4, strength_clip=0.7),
+                dict(lora_name='NONE'), dict(lora_name='b', strength_model=-0.3, strength_clip=0.2)]
+        self.lora.apply_lora.side_effect = [('first-model', 'first-clip', True), ('last-model', 'last-clip', True)]
+        self.lora.lora_token.side_effect = ['token-a', 'token-b']
+        with patch.object(sys.modules['folder_paths'], 'get_full_path', side_effect=lambda kind, name: '/' + name, create=True):
+            self.assertEqual(node.execute(model='model', clip='clip', selection=__import__('json').dumps(rows)), ('last-model', 'last-clip', 'token-a token-b'))
+        calls = self.lora.apply_lora.call_args_list
+        self.assertEqual(calls[0].args, ('model', 'clip', '/a', 'a', 0.4, 0.7))
+        self.assertEqual(calls[1].args, ('first-model', 'first-clip', '/b', 'b', -0.3, 0.2))
+
+    def test_lora_stack_empty_array_overrides_legacy_selection(self):
+        node = self.node('hybs_load_lora', 'HYBS_LoadLoRAStack')
+        self.assertEqual(node.execute(model='model', clip='clip', lora_name='a', selection='[]'), ('model', 'clip', ''))
+        self.lora.apply_lora.assert_not_called()
+        self.assertIs(node.validate_inputs(selection='[]'), True)
+
+    def test_lora_stack_disabled_rows_skip_files_and_preserve_other_rows(self):
+        import json
+        node = self.node('hybs_load_lora', 'HYBS_LoadLoRAStack')
+        rows = [dict(lora_name='missing', strength_model=0.3, enabled=False),
+                dict(lora_name='b', strength_model=0.6, enabled=True)]
+        self.assertIs(node.validate_inputs(selection=json.dumps(rows)), True)
+        with patch.object(sys.modules['folder_paths'], 'get_full_path', return_value='/b', create=True) as resolve:
+            node.execute(model='model', clip='clip', selection=json.dumps(rows))
+            resolve.assert_called_once_with('loras', 'b')
+            self.lora.apply_lora.assert_called_once()
+        self.lora.apply_lora.reset_mock()
+        rows[1]['enabled'] = False
+        self.assertEqual(node.execute(model='model', clip='clip', selection=json.dumps(rows)), ('model', 'clip', ''))
+        self.lora.apply_lora.assert_not_called()
+        rows[0]['enabled'] = True
+        self.assertIsInstance(node.validate_inputs(selection=json.dumps(rows)), str)
+
+    def test_lora_stack_rejects_invalid_rows_and_strengths(self):
+        node = self.node('hybs_load_lora', 'HYBS_LoadLoRAStack')
+        for selection in ('broken', '{}', '[1]', '[{"lora_name": 12}]', '[{"strength_model": NaN}]', '[{"strength_clip": 21}]', '[{"enabled":"false"}]', '[{"lora_name":"missing"}]'):
+            self.assertIsInstance(node.validate_inputs(selection=selection), str)
     def test_malformed_toml_entries_pass_through_instead_of_crashing(self):
         import tempfile
         node = self.node('hybs_conditional_lora_loader', 'HYBS_ConditionalLoRALoader')
