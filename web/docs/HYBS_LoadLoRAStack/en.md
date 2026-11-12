@@ -3,6 +3,8 @@
 Select a LoRA from a folder tree and apply it to MODEL, TE (CLIP), or both.
 Category: `HYBS/LoRA`. Node ID: `HYBS_LoadLoRAStack`.
 
+Use `↑` / `↓` to move a row with its settings intact. LoRAs apply from top to bottom, and the order is saved in the workflow.
+
 MODEL and TE / CLIP strength controls are displayed side by side. Each row has an `ON / OFF` switch that keeps its filename, strengths and position while disabling application. Disabled rows load no file and contribute no applied token. Switch states are saved/restored; rows from older workflows default to ON.
 
 - Connect `model`, `clip`, or both. Each connection is optional; a disconnected output is `None`.

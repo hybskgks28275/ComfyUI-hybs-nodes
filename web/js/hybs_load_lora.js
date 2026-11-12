@@ -228,9 +228,23 @@ function installUI(node) {
       header.style.cssText = "display:flex;gap:6px;align-items:center;";
       picker.style.flex = "1";
       picker.style.minWidth = "0";
+      const moveButton = (offset, label, symbol) => {
+        const target = entryIndex + offset;
+        const move = button(symbol, () => {
+          if (target < 0 || target >= state.entries.length) return;
+          editRows(() => {
+            [state.entries[entryIndex], state.entries[target]] = [state.entries[target], entry];
+          });
+        });
+        move.disabled = target < 0 || target >= state.entries.length;
+        if (move.disabled) move.style.opacity = "0.4";
+        move.setAttribute("aria-label", `Move LoRA ${entryIndex + 1} ${label}`);
+        move.title = `Move ${label}`;
+        return move;
+      };
       const remove = button("Remove", () => editRows(() => state.entries.splice(entryIndex, 1)));
       remove.setAttribute("aria-label", `Remove LoRA ${entryIndex + 1}`);
-      header.append(toggle, picker, remove);
+      header.append(toggle, picker, moveButton(-1, "up", "↑"), moveButton(1, "down", "↓"), remove);
       panel.append(header);
       const strengthGroup = document.createElement("div");
       strengthGroup.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:12px;";
