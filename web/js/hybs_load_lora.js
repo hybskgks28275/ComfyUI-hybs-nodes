@@ -47,7 +47,10 @@ function pickLoRA(node, source, commit) {
   tree.style.cssText = "overflow:auto;max-height:50vh;min-height:100px;";
   const close = () => {
     dialog.remove();
-    if (node._hybsLoRAUI?.closePicker === close) node._hybsLoRAUI.closePicker = null;
+    if (node._hybsLoRAUI?.closePicker === close) {
+      node._hybsLoRAUI.closePicker = null;
+      node._hybsLoRAUI.refreshPicker = null;
+    }
   };
   node._hybsLoRAUI.closePicker = close;
   const choose = (name) => { commit(source, name); close(); };
@@ -87,6 +90,7 @@ function pickLoRA(node, source, commit) {
     append(tree, root);
     if (!root.folders.size && !root.files.length) tree.textContent = "No LoRA files found.";
   };
+  node._hybsLoRAUI.refreshPicker = render;
   search.addEventListener("input", render);
   dialog.addEventListener("cancel", (event) => { event.preventDefault(); close(); });
   dialog.addEventListener("click", (event) => { if (event.target === dialog) close(); });
@@ -317,6 +321,20 @@ app.registerExtension({
   name: "HYBS.LoadLoRAStack",
   beforeRegisterNodeDef(nodeType, nodeData) {
     if (nodeData.name !== NODE_ID) return;
+    const refreshCombo = nodeType.prototype.refreshComboInNode;
+    nodeType.prototype.refreshComboInNode = function (definitions) {
+      const result = refreshCombo?.apply(this, arguments);
+      const input = definitions?.[NODE_ID]?.input;
+      const spec = input?.required?.lora_name ?? input?.optional?.lora_name;
+      const values = spec?.[0] === "COMBO" ? spec[1]?.options : spec?.[0];
+      const widget = findWidget(this, "lora_name");
+      // ComfyUI refreshes visible combo widgets itself, so update this hidden one here.
+      if (widget?.options && Array.isArray(values)) {
+        widget.options.values = values;
+        this._hybsLoRAUI?.refreshPicker?.();
+      }
+      return result;
+    };
     const created = nodeType.prototype.onNodeCreated;
     nodeType.prototype.onNodeCreated = function (...args) {
       const result = created?.apply(this, args);

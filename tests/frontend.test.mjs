@@ -252,6 +252,18 @@ stackNode.addWidget('combo', 'lora_name', 'NONE', () => {}, { values: ['NONE', '
 stackNode.addWidget('number', 'strength_model', 1, () => {});
 stackNode.addWidget('number', 'strength_clip', 1, () => {});
 stackNode.onNodeCreated();
+const loraOptions = widget(stackNode, 'lora_name').options;
+stackNode.refreshComboInNode({ HYBS_LoadLoRAStack: { input: { required: {
+  lora_name: ['COMBO', { options: ['NONE', 'new/folder/added.safetensors'] }],
+} } } });
+assert.deepEqual(loraOptions.values, ['NONE', 'new/folder/added.safetensors']);
+stackNode.refreshComboInNode({ HYBS_LoadLoRAStack: { input: { required: {
+  lora_name: [['NONE', 'legacy/file.safetensors']],
+} } } });
+assert.deepEqual(loraOptions.values, ['NONE', 'legacy/file.safetensors']);
+stackNode.refreshComboInNode({});
+assert.deepEqual(loraOptions.values, ['NONE', 'legacy/file.safetensors']);
+assert.equal(widget(stackNode, 'selection').value, '[]');
 const stackPanel = widget(stackNode, 'hybs_lora_controls').element;
 const descendants = (element) => [element, ...element.children.flatMap(descendants)];
 const clickStack = (text) => descendants(stackPanel).find(el => el.textContent === text).events.click({ detail: 1 });
